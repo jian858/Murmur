@@ -39,11 +39,13 @@ input{font:inherit}
 .ac{width:400px;max-width:100%;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:12px;box-shadow:0 2px 4px #0002,0 8px 20px #0001}
 .ac a{text-align:center;font-size:14px;cursor:pointer;text-decoration:underline;color:var(--mute)}.ac a:hover{color:var(--ink)}
 .ac hr{border:0;border-top:1px solid var(--line)}
-#signup .ac{width:440px}
+#signup .ac{width:460px}
 #signup .auth-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-#signup .auth-grid .full{grid-column:1/-1}
+#signup .auth-grid .full,#signup .auth-grid .pw.full{grid-column:1/-1}
+#signup .auth-grid textarea{min-height:84px;resize:vertical}
 #signup .meta{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:4px}
-#signup .meta h2{font-size:24px;letter-spacing:-.04em}.pw{position:relative}.pw .eye{position:absolute;right:10px;top:50%;transform:translateY(-50%);padding:6px;filter:grayscale(1)}
+#signup .meta h2{font-size:24px;letter-spacing:-.04em}
+.pw{position:relative}.pw .eye{position:absolute;right:10px;top:50%;transform:translateY(-50%);padding:6px;filter:grayscale(1)}
 /* header */
 #app{height:100%;display:flex;flex-direction:column}
 .hb{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;height:58px;padding:0 14px;gap:10px;background:var(--panel);border-bottom:1px solid var(--line);position:relative;z-index:10}
@@ -401,16 +403,29 @@ setTimeout(function(){if(!mm.ready)box('The app didn’t finish loading. Check t
 
 <div id="signup" hidden>
   <div class="ah">
-    <div class="aw"><h1><svg class="lg lg-xl" viewBox="0 0 64 64" role="img" aria-label="Murmur logo"><path class="lg-b" d="M32 6C17.6 6 6 16.4 6 29.5c0 6.2 2.6 11.8 6.9 16L10 57l11.3-5.6c3.4 1.2 7 1.8 10.7 1.8 12.5 0 22.5-10 22.5-22.4C54.5 16.4 43.8 6 32 6zm0 12.5c8.6 0 15.5 6.9 15.5 15.4S40.6 49.4 32 49.4 16.5 42.5 16.5 34c0-8.5 6.9-15.4 15.5-15.4zm-3.7 8.6h7.4v8.6h8.6v7.4h-8.6v8.6h-7.4v-8.6h-8.6v-7.4h8.6z"/></svg>Murmur</h1><p>Join Murmur and start connecting with your friends and community.</p></div>
+    <div class="aw"><h1><svg class="lg lg-xl" viewBox="0 0 64 64" role="img" aria-label="Murmur logo"><path class="lg-b" d="M32 6C17.6 6 6 16.4 6 29.5c0 6.2 2.6 11.8 6.9 16L10 57l11.3-5.6c3.4 1.2 7 1.8 10.7 1.8 12.5 0 22.5-10 22.5-22.4C54.5 16.4 43.8 6 32 6zm0 12.5c8.6 0 15.5 6.9 15.5 15.4S40.6 49.4 32 49.4 16.5 42.5 16.5 34c0-8.5 6.9-15.4 15.5-15.4zm-3.7 8.6h7.4v8.6h8.6v7.4h-8.6v8.6h-7.4v-8.6h-8.6v-7.4h8.6z"/></svg>Murmur</h1><p>Complete your profile and create your account.</p></div>
     <div class="ac" id="signup-card">
       <div class="meta"><h2>Create account</h2><button class="btn out sm" id="signup-back" type="button">Back</button></div>
       <form id="signup-form" novalidate>
         <div class="auth-grid">
           <input class="in2" id="sf" type="text" placeholder="First name" autocomplete="given-name" aria-label="First name">
+          <input class="in2" id="sm" type="text" placeholder="Middle name (optional)" autocomplete="additional-name" aria-label="Middle name">
           <input class="in2" id="sl" type="text" placeholder="Last name" autocomplete="family-name" aria-label="Last name">
           <input class="in2 full" id="se" type="email" placeholder="Email address" autocomplete="email" aria-label="Email address">
-          <input class="in2" id="sp" type="password" placeholder="Password" autocomplete="new-password" aria-label="Password">
-          <input class="in2" id="sp2" type="password" placeholder="Confirm password" autocomplete="new-password" aria-label="Confirm password">
+          <div class="pw full"><input class="in2" id="sp" type="password" placeholder="Password" autocomplete="new-password" aria-label="Password"><button class="eye" id="sp-eye" type="button" aria-label="Show password">👁</button></div>
+          <div class="pw full"><input class="in2" id="sp2" type="password" placeholder="Confirm password" autocomplete="new-password" aria-label="Confirm password"><button class="eye" id="sp2-eye" type="button" aria-label="Show password">👁</button></div>
+          <input class="in2" id="phone" type="tel" placeholder="Phone number (optional)" autocomplete="tel" aria-label="Phone number">
+          <input class="in2" id="bd" type="date" aria-label="Birthday" max="2026-10-27">
+          <select class="in2" id="gender" aria-label="Gender">
+            <option value="Prefer not to say">Prefer not to say</option>
+            <option value="Female">Female</option>
+            <option value="Male">Male</option>
+            <option value="Non-binary">Non-binary</option>
+          </select>
+          <input class="in2 full" id="school" type="text" placeholder="School" aria-label="School">
+          <input class="in2 full" id="location" type="text" placeholder="Location" aria-label="Location">
+          <textarea class="in2 full" id="hobbies" placeholder="Hobbies (separate with commas)" aria-label="Hobbies"></textarea>
+          <textarea class="in2 full" id="bio" placeholder="About you" aria-label="About you"></textarea>
         </div>
         <div class="er" id="signuperr"></div>
         <button class="btn" id="signup-btn" type="submit">Create account</button>
@@ -468,14 +483,15 @@ const msgOf=e=>AUTHERR[e&&e.code]||(e&&e.message)||'Something went wrong.';
 const showAuth=()=>{$('#auth').hidden=false;$('#signup').hidden=true;$('#app').hidden=true;setTimeout(()=>$('#le').focus(),30)};
 const showSignup=()=>{$('#auth').hidden=true;$('#signup').hidden=false;$('#app').hidden=true;setTimeout(()=>$('#sf').focus(),30)};
 const NAMEOK=/^[\p{L}][\p{L} '’.-]*$/u;
+const GEN=['Prefer not to say','Female','Male','Non-binary'];
 const today=new Date().toISOString().slice(0,10);
 const st={uid:null,me:null,admin:false,u:{},posts:[],reqIn:[],reqOut:[],chats:[],notes:[],ann:[],blocked:{},view:'home',prev:'home',chatWith:null,msgs:[],personId:null,ft:'sug',fq:'',signing:false};
 let bootFor=null,unsubs=[],hb=null,msgUn=null;const OPEN=new Set();
 const shake=el=>{el.classList.remove('shake');void el.offsetWidth;el.classList.add('shake')};
-async function submitSignup(){const first=$('#sf').value.trim(),last=$('#sl').value.trim(),email=$('#se').value.trim(),pw=$('#sp').value,pw2=$('#sp2').value,er=$('#signuperr');const btn=$('#signup-btn');er.textContent='';if(!first||!last){er.textContent='Enter your first and last name.';shake($('#signup-card'));return}if(!NAMEOK.test(first)||!NAMEOK.test(last)){er.textContent='Names can only contain letters, spaces, hyphens and apostrophes.';shake($('#signup-card'));return}if(!/^\S+@\S+\.\S+$/.test(email)){er.textContent='Enter a valid email address.';shake($('#signup-card'));return}if(pw.length<6){er.textContent='Your password needs at least 6 characters.';shake($('#signup-card'));return}if(pw!==pw2){er.textContent='The passwords do not match.';shake($('#signup-card'));return}btn.disabled=true;try{const c=await createUserWithEmailAndPassword(auth,email,pw);const uid=c.user.uid;const name=[first,last].join(' ');await setDoc(doc(db,'users',uid),{first,last,name,bio:'',school:'',location:'',hobbies:'',photo:'',createdAt:serverTimestamp(),lastSeen:serverTimestamp()});await setDoc(doc(db,'users',uid,'private','info'),{email,birthday:today,gender:'Prefer not to say'});btn.disabled=false;$('#signup-form').reset();toast('Welcome to Murmur, '+first+'!');showAuth();$('#le').value=email;$('#lp').value=pw;await boot(c.user);}catch(e){btn.disabled=false;er.textContent=msgOf(e);shake($('#signup-card'))}}
+function setPasswordField(id){const i=$(id);i.type=i.type==='password'?'text':'password';}
+async function submitSignup(){const first=$('#sf').value.trim(),middle=$('#sm').value.trim(),last=$('#sl').value.trim(),email=$('#se').value.trim(),phone=$('#phone').value.trim(),pw=$('#sp').value,pw2=$('#sp2').value,bd=$('#bd').value,gender=$('#gender').value,school=$('#school').value.trim(),location=$('#location').value.trim(),hobbies=$('#hobbies').value.trim(),bio=$('#bio').value.trim(),er=$('#signuperr');const btn=$('#signup-btn');er.textContent='';if(!first||!last){er.textContent='Enter your first and last name.';shake($('#signup-card'));return}if(![first,middle,last].every(n=>!n||NAMEOK.test(n))){er.textContent='Names can only contain letters, spaces, hyphens and apostrophes.';shake($('#signup-card'));return}if(!/^\S+@\S+\.\S+$/.test(email)){er.textContent='Enter a valid email address.';shake($('#signup-card'));return}if(pw.length<6){er.textContent='Your password needs at least 6 characters.';shake($('#signup-card'));return}if(pw!==pw2){er.textContent='The passwords do not match.';shake($('#signup-card'));return}if(phone&& !/^\+?[0-9 ()-]{7,18}$/.test(phone)){er.textContent='Enter a valid phone number.';shake($('#signup-card'));return}if(!bd){er.textContent='Pick your birthday.';shake($('#signup-card'));return}const age=(Date.now()-new Date(bd))/31557600000;if(age<13){er.textContent='You must be at least 13 to use Murmur.';shake($('#signup-card'));return}if(age>120){er.textContent='Check your birthday.';shake($('#signup-card'));return}btn.disabled=true;try{const c=await createUserWithEmailAndPassword(auth,email,pw);const uid=c.user.uid;const name=[first,middle,last].filter(Boolean).join(' ');await setDoc(doc(db,'users',uid),{first,middle,last,name,bio:bio.slice(0,160),school:school.slice(0,80),location:location.slice(0,80),hobbies:hobbies.slice(0,120),photo:'',createdAt:serverTimestamp(),lastSeen:serverTimestamp()});await setDoc(doc(db,'users',uid,'private','info'),{email,phone:phone||'',birthday:bd,gender:GEN.includes(gender)?gender:'Prefer not to say'});btn.disabled=false;$('#signup-form').reset();toast('Welcome to Murmur, '+first+'!');await boot(c.user);}catch(e){btn.disabled=false;er.textContent=msgOf(e);shake($('#signup-card'))}}
 $('#li').onclick=async()=>{const e=$('#le').value.trim(),p=$('#lp').value,er=$('#lerr');if(!e||!p){er.textContent='Enter your email and password.';shake($('#ac'));return}er.textContent='';$('#li').disabled=true;try{const c=await signInWithEmailAndPassword(auth,e,p);if(!st.uid)await boot(c.user)}catch(x){er.textContent=msgOf(x);shake($('#ac'));$('#li').disabled=false}};
-$('#signup-back').onclick=showAuth;$('#cna').onclick=showSignup;$('#signup-form').onsubmit=e=>{e.preventDefault();submitSignup()};$('#ac').onkeydown=e=>{if(e.key==='Enter')$('#li').click()};$('#eye').onclick=()=>{const i=$('#lp');i.type=i.type==='password'?'text':'password'};
-$('#fg').onclick=()=>{const v=$('#le').value.trim();if(!v)return;sendPasswordResetEmail(auth,v).then(()=>toast('Password reset email sent.')).catch(e=>toast(msgOf(e)));};
+$('#signup-back').onclick=showAuth;$('#cna').onclick=showSignup;$('#signup-form').onsubmit=e=>{e.preventDefault();submitSignup()};$('#ac').onkeydown=e=>{if(e.key==='Enter')$('#li').click()};$('#eye').onclick=()=>{setPasswordField('#lp')};$('#sp-eye').onclick=()=>{setPasswordField('#sp')};$('#sp2-eye').onclick=()=>{setPasswordField('#sp2')};$('#fg').onclick=()=>{const v=$('#le').value.trim();if(!v)return;sendPasswordResetEmail(auth,v).then(()=>toast('Password reset email sent.')).catch(e=>toast(msgOf(e)));};
 function stop(){unsubs.forEach(f=>{try{f()}catch(e){}});unsubs=[];if(msgUn){msgUn();msgUn=null}clearInterval(hb);}
 async function boot(user){if(bootFor===user.uid)return;stop();bootFor=user.uid;st.uid=user.uid;$('#auth').hidden=true;$('#signup').hidden=true;$('#app').hidden=false;const uid=user.uid;const meRef=doc(db,'users',uid);let s=await getDoc(meRef);if(!s.exists()){await setDoc(meRef,{first:'New',middle:'',last:'user',name:'New user',bio:'',school:'',location:'',hobbies:'',photo:'',createdAt:serverTimestamp(),lastSeen:serverTimestamp()});s=await getDoc(meRef)}st.me=s.data();st.me.id=uid;go('home');}
 function go(v){st.view=v;$('#app').classList.remove('chat');$$('.view').forEach(e=>e.classList.toggle('on',e.id==='v-'+v));$$('.tb').forEach(b=>b.classList.toggle('on',b.dataset.v===v));}
