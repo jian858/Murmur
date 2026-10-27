@@ -1,0 +1,2527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Murmur – Chat, share and watch together</title>
+  <meta name="theme-color" content="#14c8a0" />
+  <meta name="application-name" content="Murmur" />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><path fill='%2314c8a0' d='M16 4h32a12 12 0 0 1 12 12v24a12 12 0 0 1-12 12H31L15 62V52a12 12 0 0 1-11-12V16A12 12 0 0 1 16 4z'/><g fill='%23fff'><rect x='15' y='23' width='5' height='10' rx='2.5'/><rect x='24' y='16' width='5' height='24' rx='2.5'/><rect x='33' y='20' width='5' height='16' rx='2.5'/><rect x='42' y='24' width='5' height='8' rx='2.5'/></g></svg>" />
+  <style>
+    :root {
+      --bg: #edf4f1;
+      --panel: rgba(255,255,255,0.72);
+      --ink: #14213d;
+      --muted: #6a778c;
+      --line: rgba(20,33,61,0.12);
+      --acc: #14c8a0;
+      --acc-strong: #0aa981;
+      --on: #04261e;
+      --shadow: 0 20px 50px rgba(14, 32, 46, 0.12);
+      --danger: #b3261e;
+      --warning: #d18b14;
+      --white: #ffffff;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      background: linear-gradient(180deg, #dff8f0 0%, var(--bg) 26%, #eef3f8 100%);
+      color: var(--ink);
+    }
+    a { color: inherit; }
+    button, input, select, textarea { font: inherit; }
+    button { cursor: pointer; }
+    [hidden] { display: none !important; }
+    .skip-link {
+      position: absolute;
+      left: -9999px;
+      top: 0;
+      background: var(--ink);
+      color: var(--white);
+      padding: 10px 14px;
+      z-index: 1000;
+      border-radius: 0 0 12px 12px;
+    }
+    .skip-link:focus {
+      left: 12px;
+    }
+
+    .app-shell {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .auth-card {
+      width: min(980px, 100%);
+      display: grid;
+      grid-template-columns: 1.2fr 420px;
+      gap: 42px;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .brand {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .brand-mark {
+      width: 28px;
+      height: 28px;
+      flex-shrink: 0;
+      display: inline-block;
+      background: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><path fill='%2314c8a0' d='M16 4h32a12 12 0 0 1 12 12v24a12 12 0 0 1-12 12H31L15 62V52a12 12 0 0 1-11-12V16A12 12 0 0 1 16 4z'/><g fill='%23fff'><rect x='15' y='23' width='5' height='10' rx='2.5'/><rect x='24' y='16' width='5' height='24' rx='2.5'/><rect x='33' y='20' width='5' height='16' rx='2.5'/><rect x='42' y='24' width='5' height='8' rx='2.5'/></g></svg>") center / contain no-repeat;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: clamp(2.8rem, 7vw, 5rem);
+      letter-spacing: -0.06em;
+      line-height: 0.9;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .brand p {
+      margin: 0;
+      max-width: 520px;
+      font-size: clamp(1.1rem, 2vw, 1.8rem);
+      line-height: 1.25;
+      color: var(--muted);
+    }
+
+    .panel {
+      background: rgba(255,255,255,0.72);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+      padding: 20px;
+    }
+
+    .form {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .field label {
+      font-size: 0.82rem;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.7);
+      border-radius: 12px;
+      padding: 14px 16px;
+      color: var(--ink);
+      outline: none;
+      transition: border 0.2s ease, box-shadow 0.2s ease;
+    }
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--acc);
+      box-shadow: 0 0 0 4px rgba(20,200,160,0.12);
+    }
+    textarea { min-height: 90px; resize: vertical; }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .password-wrap {
+      position: relative;
+    }
+    .password-wrap input { padding-right: 52px; }
+    .password-toggle {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .strength-bar {
+      height: 8px;
+      width: 100%;
+      background: rgba(20,33,61,0.08);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .strength-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--danger);
+      border-radius: inherit;
+      transition: width 0.2s ease, background 0.2s ease;
+    }
+    .password-feedback {
+      font-size: 0.8rem;
+      color: var(--muted);
+      min-height: 18px;
+    }
+    .password-feedback strong { display: inline-block; min-width: 62px; }
+
+    .btn {
+      border: 0;
+      border-radius: 999px;
+      padding: 14px 16px;
+      font-weight: 700;
+      transition: transform 0.2s ease, opacity 0.2s ease, background 0.2s ease;
+      width: 100%;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: scale(0.99); }
+    .btn.primary {
+      background: var(--acc);
+      color: var(--on);
+    }
+    .btn.secondary {
+      background: transparent;
+      color: var(--ink);
+      border: 1.5px solid var(--ink);
+    }
+    .btn.ghost {
+      background: rgba(20,33,61,0.04);
+      color: var(--ink);
+    }
+    .btn.small {
+      width: auto;
+      padding: 10px 14px;
+      font-size: 0.85rem;
+    }
+
+    .tiny {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+    .tiny button {
+      background: none;
+      border: none;
+      color: var(--ink);
+      text-decoration: underline;
+      padding: 0;
+      font-weight: 700;
+    }
+
+    .error {
+      min-height: 18px;
+      color: var(--danger);
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      background: rgba(255,255,255,0.7);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--line);
+      padding: 10px 18px;
+      position: sticky;
+      top: 0;
+      z-index: 20;
+    }
+    .brand-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      font-size: 1.4rem;
+    }
+    .nav {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex: 1;
+    }
+    .nav button {
+      background: transparent;
+      border: 0;
+      color: var(--muted);
+      padding: 10px 16px;
+      border-radius: 12px;
+      font-weight: 700;
+    }
+    .nav button.active {
+      background: rgba(20,33,61,0.06);
+      color: var(--ink);
+    }
+    .menu-btn {
+      background: rgba(20,33,61,0.06);
+      color: var(--ink);
+      border: 0;
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-weight: 700;
+    }
+
+    .main {
+      max-width: 980px;
+      margin: 22px auto 80px;
+      padding: 0 14px;
+    }
+    .pane {
+      display: none;
+    }
+    .pane.active { display: block; }
+
+    .composer, .card {
+      background: rgba(255,255,255,0.72);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 16px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(8px);
+    }
+    .composer {
+      display: grid;
+      grid-template-columns: 52px 1fr auto;
+      gap: 12px;
+      align-items: center;
+    }
+    .avatar {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--acc), #d4f8ea);
+      color: var(--on);
+      font-size: 1.05rem;
+    }
+    .composer input {
+      background: rgba(20,33,61,0.04);
+      border: 1px solid transparent;
+    }
+
+    .posts,
+    .chat-list,
+    .alerts-list,
+    .friends-list {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .post {
+      padding: 18px 18px 14px;
+      background: rgba(255,255,255,0.72);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+    }
+    .post-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+    .meta {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .meta small { color: var(--muted); }
+    .post p { margin: 0; line-height: 1.5; }
+    .post-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 1px solid var(--line);
+    }
+    .post-actions button {
+      background: transparent;
+      border: 0;
+      color: var(--muted);
+      padding: 8px 10px;
+      border-radius: 10px;
+      font-weight: 700;
+    }
+    .post-actions button.active {
+      background: rgba(20,200,160,0.12);
+      color: var(--on);
+    }
+
+    .chat-layout {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 14px;
+    }
+    .sidebar, .conversation {
+      background: rgba(255,255,255,0.72);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .sidebar-header {
+      padding: 16px 18px 10px;
+      font-size: 1.75rem;
+      font-weight: 800;
+      letter-spacing: -0.05em;
+    }
+    .search {
+      padding: 0 14px 10px;
+    }
+    .search input {
+      background: rgba(20,33,61,0.04);
+      border: 1px solid transparent;
+    }
+    .chat-item {
+      display: flex;
+      gap: 10px;
+      padding: 12px 14px;
+      border-top: 1px solid var(--line);
+      align-items: center;
+      cursor: pointer;
+      width: 100%;
+      background: transparent;
+      color: inherit;
+      text-align: left;
+    }
+    .chat-item.active {
+      background: rgba(20,33,61,0.05);
+    }
+    .chat-item .avatar { width: 42px; height: 42px; font-size: 0.9rem; }
+    .chat-item h4, .chat-item p { margin: 0; }
+    .chat-item p { color: var(--muted); font-size: 0.9rem; }
+    .chat-item .time { margin-left: auto; color: var(--muted); font-size: 0.75rem; }
+
+    .conversation {
+      display: flex;
+      flex-direction: column;
+      min-height: 560px;
+    }
+    .conversation-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--line);
+    }
+    .conversation-header .meta {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .messages {
+      flex: 1;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      overflow: auto;
+    }
+    .bubble {
+      max-width: 70%;
+      padding: 12px 14px;
+      border-radius: 18px;
+      line-height: 1.4;
+      background: rgba(20,33,61,0.05);
+      color: var(--ink);
+      align-self: flex-start;
+    }
+    .bubble.me {
+      align-self: flex-end;
+      background: var(--acc);
+      color: var(--on);
+    }
+    .composer-chat {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      padding: 14px 16px 18px;
+      border-top: 1px solid var(--line);
+    }
+
+    .notice {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      background: rgba(255,255,255,0.72);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 16px;
+      box-shadow: var(--shadow);
+    }
+    .notice .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--acc);
+      margin-top: 8px;
+      flex-shrink: 0;
+    }
+    .notice h4, .notice p { margin: 0; }
+    .notice small { color: var(--muted); }
+
+    .empty {
+      color: var(--muted);
+      text-align: center;
+      padding: 24px 10px 10px;
+    }
+
+    .tip {
+      background: rgba(20,200,160,0.08);
+      border: 1px solid rgba(20,200,160,0.25);
+      color: var(--ink);
+      border-radius: 12px;
+      padding: 10px 12px;
+      margin-bottom: 12px;
+      font-size: 0.92rem;
+    }
+
+    /* ---------- Create account: full-screen page ---------- */
+    .screen-registration {
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      display: grid;
+      grid-template-columns: 360px minmax(0, 1fr);
+      background: linear-gradient(180deg, #dff8f0 0%, #edf4f1 30%, #eef3f8 100%);
+      height: 100vh;
+      height: 100dvh;
+    }
+
+    .reg-side {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      padding: 24px 20px 20px;
+      background: linear-gradient(180deg, rgba(20,200,160,0.20), rgba(20,200,160,0.05));
+      border-right: 1px solid var(--line);
+      overflow-y: auto;
+    }
+    .reg-side-intro { display: flex; flex-direction: column; gap: 8px; }
+    .reg-side h2 {
+      margin: 0;
+      font-size: clamp(1.4rem, 2vw, 1.8rem);
+      letter-spacing: -0.05em;
+      line-height: 1.1;
+    }
+    .reg-side-intro p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.4;
+      font-size: 0.9rem;
+    }
+
+    .reg-tabs {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .reg-tab {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      padding: 8px 10px;
+      border: 0;
+      border-radius: 12px;
+      background: transparent;
+      color: var(--muted);
+      text-align: left;
+      font-weight: 700;
+      line-height: 1.25;
+      transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+    }
+    .reg-tab:hover { background: rgba(255,255,255,0.55); }
+    .reg-tab .num {
+      width: 26px;
+      height: 26px;
+      flex-shrink: 0;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: rgba(20,33,61,0.08);
+      font-size: 0.78rem;
+    }
+    .reg-tab small {
+      display: block;
+      margin-top: 0;
+      font-weight: 500;
+      font-size: 0.72rem;
+    }
+    .reg-tab.active {
+      background: var(--white);
+      color: var(--ink);
+      box-shadow: 0 8px 22px rgba(20,33,61,0.08);
+    }
+    .reg-tab.active .num { background: var(--acc); color: var(--on); }
+    .reg-tab.done .num { background: rgba(20,200,160,0.28); color: var(--on); }
+
+    .reg-main {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      min-height: 0;
+    }
+    .reg-topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 24px;
+      background: rgba(255,255,255,0.6);
+      backdrop-filter: blur(10px);
+    }
+    .reg-topbar strong { display: block; font-size: 1.05rem; }
+    .reg-topbar small { color: var(--muted); }
+    .reg-progress {
+      height: 4px;
+      background: rgba(20,33,61,0.08);
+    }
+    .reg-progress > div {
+      height: 100%;
+      width: 0;
+      background: var(--acc);
+      transition: width 0.25s ease;
+    }
+    .close-btn {
+      border: 0;
+      width: 36px;
+      height: 36px;
+      flex-shrink: 0;
+      border-radius: 50%;
+      background: rgba(20,33,61,0.06);
+      color: var(--ink);
+      font-size: 1.3rem;
+      font-weight: 700;
+    }
+    .close-btn:hover { background: rgba(20,33,61,0.1); }
+
+    .reg-body {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      padding: 20px 24px 16px;
+    }
+    .reg-content { max-width: 560px; margin: 0 auto; }
+
+    .reg-step { display: none; flex-direction: column; gap: 8px; }
+    .reg-step.active { display: flex; }
+    .reg-step-head h3 {
+      margin: 0 0 2px;
+      font-size: clamp(1.3rem, 2vw, 1.6rem);
+      letter-spacing: -0.04em;
+      line-height: 1.15;
+    }
+    .reg-step-head p { margin: 0 0 4px; color: var(--muted); line-height: 1.4; font-size: 0.9rem; }
+    .reg-step .field { gap: 4px; }
+    .reg-step .row { gap: 10px; }
+    .reg-step input, .reg-step select, .reg-step textarea { padding: 10px 12px; }
+    .reg-step textarea { min-height: 64px; }
+    .field-hint { color: var(--muted); font-size: 0.8rem; line-height: 1.4; }
+
+    .reg-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 24px;
+      background: rgba(255,255,255,0.8);
+      backdrop-filter: blur(10px);
+      border-top: 1px solid var(--line);
+    }
+    .reg-footer .btn { width: auto; min-width: 110px; padding: 10px 22px; }
+    .reg-error {
+      flex: 1;
+      text-align: center;
+      color: var(--danger);
+      font-weight: 700;
+      font-size: 0.9rem;
+      line-height: 1.3;
+    }
+
+    .interest-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+    .interest-option {
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.7);
+      color: var(--ink);
+      font-size: 0.92rem;
+      transition: background 0.15s ease, border-color 0.15s ease;
+    }
+    .interest-option:hover { border-color: rgba(20,200,160,0.5); }
+    .interest-option.selected {
+      background: rgba(20,200,160,0.16);
+      border-color: rgba(20,200,160,0.6);
+    }
+    .section-label {
+      margin: 2px 0 -2px;
+      font-size: 0.82rem;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .profile-preview {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      background: rgba(255,255,255,0.7);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 12px;
+    }
+    .profile-preview .avatar { width: 48px; height: 48px; font-size: 1rem; }
+    .profile-preview h4, .profile-preview p { margin: 0; }
+    .profile-preview p { color: var(--muted); margin-top: 2px; }
+
+    .review-list {
+      background: rgba(255,255,255,0.7);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      overflow: hidden;
+    }
+    .review-row {
+      display: grid;
+      grid-template-columns: 110px minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: baseline;
+      padding: 8px 14px;
+      border-top: 1px solid var(--line);
+    }
+    .review-row:first-child { border-top: 0; }
+    .review-row dt { color: var(--muted); font-size: 0.85rem; font-weight: 600; }
+    .review-row dd { margin: 0; overflow-wrap: anywhere; line-height: 1.4; }
+    .review-row dd.empty-val { color: var(--muted); }
+    .review-row button {
+      background: none;
+      border: 0;
+      padding: 0;
+      color: var(--ink);
+      font-weight: 700;
+      font-size: 0.85rem;
+      text-decoration: underline;
+    }
+
+    .checkbox-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      color: var(--muted);
+      line-height: 1.4;
+      font-size: 0.9rem;
+    }
+    .checkbox-row input { width: 20px; height: 20px; margin-top: 2px; flex-shrink: 0; padding: 0; }
+    .checkbox-row a { color: var(--ink); }
+
+
+    /* ---------- Forgot password: full-screen page ---------- */
+    .screen-forgot {
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      background: linear-gradient(180deg, #dff8f0 0%, #edf4f1 30%, #eef3f8 100%);
+      height: 100vh;
+      height: 100dvh;
+    }
+    .forgot-side {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 24px;
+      padding: 40px 48px;
+      background: linear-gradient(180deg, rgba(20,200,160,0.20), rgba(20,200,160,0.05));
+      border-right: 1px solid var(--line);
+    }
+    .forgot-side h2 {
+      margin: 0 0 14px;
+      font-size: clamp(2rem, 3.4vw, 3.2rem);
+      letter-spacing: -0.05em;
+      line-height: 1.05;
+    }
+    .forgot-side p { margin: 0; color: var(--muted); line-height: 1.55; max-width: 36ch; }
+    .forgot-main {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+    .forgot-top {
+      display: flex;
+      justify-content: flex-end;
+      padding: 18px 40px;
+    }
+    .forgot-body {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 40px 48px;
+    }
+    .forgot-content { width: min(440px, 100%); display: flex; flex-direction: column; gap: 12px; }
+    .forgot-content h3 { margin: 0; font-size: clamp(1.7rem, 2.8vw, 2.3rem); letter-spacing: -0.045em; line-height: 1.1; }
+    .forgot-content > p { margin: 0 0 6px; color: var(--muted); line-height: 1.5; }
+    .forgot-success {
+      background: rgba(20,200,160,0.12);
+      border: 1px solid rgba(20,200,160,0.35);
+      border-radius: 16px;
+      padding: 16px;
+      line-height: 1.5;
+    }
+
+    @media (max-width: 900px) {
+      .screen-registration { grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr); }
+      .reg-side {
+        padding: 8px 10px 6px;
+        gap: 6px;
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+        overflow: visible;
+      }
+      .reg-side-intro p, .reg-side h2 { display: none; }
+      .reg-tabs { flex-direction: row; overflow-x: auto; gap: 6px; padding-bottom: 4px; }
+      .reg-tab { width: auto; flex-shrink: 0; padding: 4px 10px 4px 4px; gap: 6px; border-radius: 999px; }
+      .reg-tab .num { width: 22px; height: 22px; font-size: 0.72rem; }
+      .reg-tab small { display: none; }
+      .reg-topbar { padding: 8px 14px; }
+      .reg-body { padding: 14px 14px 12px; }
+      .reg-footer { padding: 8px 14px; }
+      .reg-footer .btn { min-width: 0; padding: 10px 18px; }
+      .review-row { grid-template-columns: 84px minmax(0, 1fr) auto; padding: 8px 12px; }
+    }
+
+    @media (max-width: 780px) {
+      .auth-card { grid-template-columns: 1fr; }
+      .chat-layout { grid-template-columns: 1fr; }
+      .conversation { min-height: 420px; }
+      .nav { justify-content: space-between; }
+      .nav button { padding: 10px 8px; }
+      .row { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 900px) {
+      .screen-forgot { grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr); }
+      .forgot-side { padding: 14px 16px; border-right: 0; border-bottom: 1px solid var(--line); }
+      .forgot-side h2, .forgot-side p { display: none; }
+      .forgot-top { padding: 12px 16px; }
+      .forgot-body { align-items: flex-start; padding: 20px 18px 32px; }
+    }
+
+    /* Phone-only spacing fixes */
+    @media (max-width: 780px) {
+      .error:empty { display: none; }
+      .app-shell { padding: 16px; }
+      .auth-card { gap: 24px; padding: 8px; }
+      .panel { padding: 22px 18px; }
+      .form { gap: 16px; }
+      .field { gap: 8px; }
+      .row { gap: 16px; }
+      .main { margin: 16px auto 64px; padding: 0 12px; }
+      .posts, .chat-list, .alerts-list, .friends-list { gap: 12px; margin-top: 14px; }
+      .reg-step { gap: 8px; }
+      .reg-step .field { gap: 4px; }
+      .reg-step .row { gap: 8px; }
+      .forgot-content { gap: 16px; }
+    }
+
+    /* Create account: readable text, same compact spacing */
+    .screen-registration { color: var(--ink); }
+    .screen-registration .field label { font-size: 0.92rem; font-weight: 700; color: #33415a; }
+    .screen-registration input,
+    .screen-registration select,
+    .screen-registration textarea {
+      font-size: 16px;
+      color: var(--ink);
+      line-height: 1.3;
+    }
+    .screen-registration ::placeholder { color: #7a8599; opacity: 1; }
+    .screen-registration .reg-step .row { grid-template-columns: 1fr 1fr; }
+    .screen-registration .reg-step-head h3 { font-size: clamp(1.6rem, 2.4vw, 2rem); }
+    .screen-registration .reg-step-head p { font-size: 1rem; color: #4d5a70; }
+    .screen-registration .field-hint { font-size: 0.88rem; color: #4d5a70; }
+    .screen-registration .reg-side h2 { font-size: clamp(1.5rem, 2.2vw, 2rem); }
+    .screen-registration .reg-side-intro p { font-size: 1rem; color: #4d5a70; }
+    .screen-registration .reg-tab { font-size: 1rem; color: #33415a; }
+    .screen-registration .reg-tab.active { color: var(--ink); }
+    .screen-registration .reg-tab .num { width: 28px; height: 28px; font-size: 0.9rem; }
+    .screen-registration .reg-tab small { font-size: 0.82rem; color: #4d5a70; }
+    .screen-registration .reg-topbar strong { font-size: 1.1rem; }
+    .screen-registration .reg-topbar small { font-size: 0.9rem; color: #4d5a70; }
+    .screen-registration .reg-footer .btn { font-size: 1rem; }
+    .screen-registration .interest-option { font-size: 1rem; }
+    .screen-registration .section-label { font-size: 0.92rem; font-weight: 700; color: #33415a; }
+    .screen-registration .password-feedback { font-size: 0.88rem; color: #4d5a70; }
+    .screen-registration .password-toggle { font-size: 0.9rem; color: #33415a; }
+    .screen-registration .review-row dt { font-size: 0.92rem; color: #4d5a70; }
+    .screen-registration .review-row dd { font-size: 1rem; }
+    .screen-registration .review-row button { font-size: 0.92rem; }
+    .screen-registration .checkbox-row { font-size: 0.95rem; color: #33415a; }
+    .screen-registration .reg-error { font-size: 0.95rem; }
+    @media (max-width: 900px) {
+      .screen-registration .reg-tab { font-size: 0.92rem; }
+      .screen-registration .reg-tab .num { width: 24px; height: 24px; font-size: 0.8rem; }
+    }
+
+    /* Create account: stop sideways overflow on phones */
+    .screen-registration { overflow: hidden; max-width: 100vw; }
+    .screen-registration > * { min-width: 0; }
+    .screen-registration .reg-tabs { min-width: 0; max-width: 100%; }
+    .screen-registration .reg-content,
+    .screen-registration .reg-step,
+    .screen-registration .reg-step .field,
+    .screen-registration .reg-step .row > * { min-width: 0; max-width: 100%; }
+    .screen-registration .reg-step .row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+    .screen-registration input[type="date"] {
+      min-width: 0;
+      -webkit-appearance: none;
+      appearance: none;
+      min-height: 46px;
+    }
+    @media (max-width: 900px) {
+      .screen-registration { grid-template-columns: minmax(0, 1fr); }
+      .screen-registration .reg-body { padding: 16px 16px 12px; }
+      .screen-registration .reg-step { gap: 10px; }
+      .screen-registration .reg-step .row { gap: 10px; }
+      .screen-registration .reg-footer { padding: 10px 16px; }
+    }
+
+    /* ---------- Loading screen ---------- */
+    #splash {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background: linear-gradient(180deg, #dff8f0 0%, var(--bg) 45%, #eef3f8 100%);
+      transition: opacity 0.45s ease, visibility 0.45s ease;
+    }
+    #splash.hide { opacity: 0; visibility: hidden; }
+    .splash-inner {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      text-align: center;
+      transform: translateY(-6px);
+    }
+    .splash-logo {
+      width: 96px;
+      height: 96px;
+      filter: drop-shadow(0 14px 26px rgba(20,200,160,0.35));
+      animation: splash-pop 0.7s cubic-bezier(.2,.9,.3,1.2) both, splash-float 2.4s ease-in-out 0.7s infinite;
+    }
+    .splash-name {
+      font-size: clamp(2.2rem, 8vw, 3.4rem);
+      font-weight: 800;
+      letter-spacing: -0.06em;
+      line-height: 1;
+      animation: splash-rise 0.6s ease 0.15s both;
+    }
+    .splash-tag {
+      color: var(--muted);
+      font-size: 1rem;
+      animation: splash-rise 0.6s ease 0.3s both;
+    }
+    .splash-bar {
+      width: 150px;
+      height: 4px;
+      margin-top: 12px;
+      border-radius: 999px;
+      background: rgba(20,33,61,0.1);
+      overflow: hidden;
+      animation: splash-rise 0.6s ease 0.45s both;
+    }
+    .splash-bar > i {
+      display: block;
+      height: 100%;
+      width: 40%;
+      border-radius: inherit;
+      background: var(--acc);
+      animation: splash-slide 1.1s ease-in-out infinite;
+    }
+    @keyframes splash-pop { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    @keyframes splash-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+    @keyframes splash-rise { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    @keyframes splash-slide { from { transform: translateX(-100%); } to { transform: translateX(260%); } }
+    @media (prefers-reduced-motion: reduce) {
+      .splash-logo, .splash-name, .splash-tag, .splash-bar, .splash-bar > i { animation: none; }
+      .splash-bar > i { width: 100%; }
+    }
+
+    /* ---------- Legal pages + cookie notice ---------- */
+    .legal-links {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.6;
+    }
+    .legal-links a { color: var(--ink); font-weight: 600; }
+    .main > .legal-links { margin-top: 32px; }
+
+    .screen-legal {
+      position: fixed;
+      inset: 0;
+      z-index: 250;
+      display: flex;
+      flex-direction: column;
+      background: linear-gradient(180deg, #dff8f0 0%, #edf4f1 30%, #eef3f8 100%);
+      height: 100vh;
+      height: 100dvh;
+      color: var(--ink);
+    }
+    .legal-top {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 12px 24px;
+      background: rgba(255,255,255,0.75);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--line);
+    }
+    .legal-tabs { display: flex; gap: 6px; flex: 1; justify-content: center; }
+    .legal-tab {
+      border: 0;
+      background: transparent;
+      color: #33415a;
+      font-weight: 700;
+      font-size: 1rem;
+      padding: 10px 16px;
+      border-radius: 12px;
+    }
+    .legal-tab.active { background: var(--white); color: var(--ink); box-shadow: 0 6px 18px rgba(20,33,61,0.08); }
+    .legal-body { flex: 1; min-height: 0; overflow-y: auto; padding: 32px 24px 56px; }
+    .legal-doc {
+      max-width: 780px;
+      margin: 0 auto;
+      background: rgba(255,255,255,0.85);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      padding: 36px 40px 40px;
+      line-height: 1.65;
+      font-size: 1rem;
+      color: #2a374e;
+    }
+    .legal-doc h1 { margin: 0 0 4px; font-size: clamp(2rem, 4vw, 2.6rem); letter-spacing: -0.05em; line-height: 1.1; color: var(--ink); }
+    .legal-doc .legal-meta { margin: 0 0 20px; color: var(--muted); font-size: 0.92rem; }
+    .legal-doc h2 { margin: 28px 0 8px; font-size: 1.25rem; letter-spacing: -0.02em; color: var(--ink); }
+    .legal-doc h3 { margin: 18px 0 4px; font-size: 1rem; color: var(--ink); }
+    .legal-doc p { margin: 0 0 12px; }
+    .legal-doc ul { margin: 0 0 12px; padding-left: 22px; }
+    .legal-doc li { margin-bottom: 6px; }
+    .legal-doc a { color: var(--acc-strong); font-weight: 600; }
+    .legal-note {
+      background: rgba(20,200,160,0.1);
+      border: 1px solid rgba(20,200,160,0.3);
+      border-radius: 14px;
+      padding: 12px 14px;
+      margin: 0 0 16px;
+    }
+    .legal-table-wrap { overflow-x: auto; margin: 8px 0 16px; border: 1px solid var(--line); border-radius: 14px; }
+    .legal-table { width: 100%; border-collapse: collapse; font-size: 0.92rem; min-width: 560px; }
+    .legal-table th, .legal-table td { text-align: left; padding: 10px 12px; border-top: 1px solid var(--line); vertical-align: top; }
+    .legal-table thead th { border-top: 0; background: rgba(20,33,61,0.05); color: var(--ink); }
+    .legal-table code { font-size: 0.85rem; background: rgba(20,33,61,0.06); padding: 1px 5px; border-radius: 6px; word-break: break-all; }
+    .legal-doc .btn { width: auto; margin-top: 4px; }
+
+    .cookie-notice {
+      position: fixed;
+      left: 16px;
+      bottom: 16px;
+      z-index: 150;
+      width: min(520px, calc(100vw - 32px));
+      background: rgba(255,255,255,0.97);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      box-shadow: 0 18px 50px rgba(14,32,46,0.22);
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      animation: splash-rise 0.4s ease both;
+    }
+    .cookie-notice strong { display: block; margin-bottom: 4px; font-size: 1.05rem; }
+    .cookie-notice p { margin: 0; color: #4d5a70; line-height: 1.5; font-size: 0.95rem; }
+    .cookie-notice a { color: var(--ink); font-weight: 700; }
+    .cookie-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+    .cookie-actions .btn { width: auto; flex: 1 1 140px; padding: 11px 16px; }
+
+    @media (max-width: 780px) {
+      .legal-top { padding: 8px 12px; gap: 8px; flex-wrap: wrap; }
+      .legal-top .brand-row { font-size: 1.2rem; }
+      .legal-top .close-btn { margin-left: auto; }
+      .legal-tabs { order: 3; flex: 1 1 100%; }
+      .legal-tab { flex: 1; padding: 9px 10px; font-size: 0.95rem; }
+      .legal-body { padding: 16px 12px 40px; }
+      .legal-doc { padding: 22px 18px 26px; border-radius: 18px; }
+      .cookie-notice { left: 12px; bottom: 12px; width: calc(100vw - 24px); }
+    }
+    .linklike { background: none; border: 0; padding: 0; color: var(--danger); font-weight: 600; text-decoration: underline; font-size: inherit; }
+    .modal-back { position: fixed; inset: 0; z-index: 400; background: rgba(20,33,61,0.5); display: grid; place-items: center; padding: 16px; }
+    .modal-card { width: min(420px, 100%); background: var(--white); border-radius: 20px; padding: 22px; display: flex; flex-direction: column; gap: 12px; }
+    .modal-card h3, .modal-card p { margin: 0; }
+    .modal-card p { color: var(--muted); line-height: 1.5; }
+    #verifyBanner { margin-bottom: 12px; }
+    .badge { display: inline-grid; place-items: center; min-width: 18px; height: 18px; margin-left: 6px; padding: 0 5px; border-radius: 999px; background: var(--danger); color: #fff; font-size: 0.72rem; font-weight: 800; }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Skip to main content</a>
+
+  <div id="splash" role="status" aria-live="polite" aria-label="Loading Murmur">
+    <div class="splash-inner">
+      <span class="brand-mark splash-logo" aria-hidden="true"></span>
+      <div class="splash-name">Murmur</div>
+      <div class="splash-tag">Chat, share and watch together</div>
+      <div class="splash-bar" aria-hidden="true"><i></i></div>
+    </div>
+  </div>
+
+  <div id="auth" hidden>
+    <div class="app-shell">
+      <div class="auth-card">
+        <div class="brand">
+          <h1><span class="brand-mark" aria-hidden="true"></span>Murmur</h1>
+          <p>Murmur helps you chat, share and watch reels with the people in your life.</p>
+        </div>
+
+        <div class="panel">
+          <div class="form" id="authForm">
+            <div class="field">
+              <label for="email">Email Address</label>
+              <input id="email" type="email" autocomplete="username" placeholder="you@example.com" />
+            </div>
+            <div class="field">
+              <label for="password">Password</label>
+              <input id="password" type="password" autocomplete="current-password" placeholder="••••••••" />
+            </div>
+            <div class="error" id="authError"></div>
+            <button class="btn primary" id="loginBtn" type="button">Log in</button>
+            <button class="btn secondary" id="createBtn" type="button">Create new account</button>
+            <div class="tiny"><button id="resetBtn" type="button">Forgot password?</button></div>
+            <div class="tiny legal-links"><a href="#terms">Terms</a> · <a href="#privacy">Privacy Policy</a> · <a href="#cookies">Cookie Policy</a></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="app" hidden>
+    <header class="topbar">
+      <div class="brand-row"><span class="brand-mark" aria-hidden="true"></span>Murmur</div>
+      <nav class="nav" aria-label="Main navigation">
+        <button class="active" data-view="home" type="button">Home</button>
+        <button data-view="friends" type="button">Friends<span class="badge" id="friendsBadge" hidden></span></button>
+        <button data-view="chats" type="button">Chats</button>
+        <button data-view="alerts" type="button">Alerts<span class="badge" id="alertsBadge" hidden></span></button>
+      </nav>
+      <button class="menu-btn" id="logoutBtn" type="button">Log out</button>
+    </header>
+
+    <main id="main-content" class="main">
+      <section class="pane active" data-pane="home">
+        <div class="tip" id="verifyBanner" hidden></div>
+        <div class="tip">Welcome back — your demo feed is running locally in this browser.</div>
+        <div class="composer">
+          <div class="avatar" id="composerAvatar">MC</div>
+          <input id="postInput" type="text" maxlength="200" placeholder="What’s on your mind?" />
+          <button class="btn primary" id="postBtn" type="button">Post</button>
+        </div>
+        <div class="posts" id="posts"></div>
+      </section>
+
+      <section class="pane" data-pane="friends">
+        <div class="card">
+          <h2 style="margin:0 0 12px">Find friends</h2>
+          <div class="composer" style="grid-template-columns:1fr auto;box-shadow:none;border:0;padding:0;background:none">
+            <input id="friendSearch" type="text" placeholder="Search by username, e.g. @jian123" maxlength="30" />
+            <button class="btn primary" id="friendSearchBtn" type="button">Search</button>
+          </div>
+          <div id="searchResults" class="friends-list"></div>
+        </div>
+        <div class="card" style="margin-top:14px"><h2 style="margin:0 0 4px">Friends</h2><div id="friendsList" class="friends-list"></div></div>
+        <div class="card" style="margin-top:14px" id="sentCard" hidden><h2 style="margin:0 0 4px">Sent requests</h2><div id="sentList" class="friends-list"></div></div>
+      </section>
+
+      <section class="pane" data-pane="chats">
+        <div class="chat-layout">
+          <aside class="sidebar">
+            <div class="sidebar-header">Chats</div>
+            <div class="search"><input id="chatSearch" type="text" placeholder="Search people" /></div>
+            <div id="chatList" class="chat-list"></div>
+          </aside>
+
+          <div class="conversation">
+            <div class="conversation-header">
+              <div class="meta">
+                <div class="avatar" id="chatAvatar">A</div>
+                <div>
+                  <strong id="chatName">Ava</strong><br />
+                  <small id="chatStatus">online</small>
+                </div>
+              </div>
+              <button class="btn ghost" type="button">More</button>
+            </div>
+            <div class="messages" id="messages"></div>
+            <div class="composer-chat">
+              <input id="messageInput" type="text" placeholder="Write a message" maxlength="300" />
+              <button class="btn primary" id="sendBtn" type="button">Send</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="pane" data-pane="alerts">
+        <div class="alerts-list" id="alertsList"></div>
+      </section>
+      <footer class="legal-links"><a href="#terms">Terms</a> · <a href="#privacy">Privacy Policy</a> · <a href="#cookies">Cookie Policy</a> · <button type="button" class="linklike" id="deleteAccountBtn">Delete account</button></footer>
+    </main>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail, reauthenticateWithCredential, EmailAuthProvider, deleteUser, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+    import { getDatabase, ref, set, get, push, update, remove, onValue, query, orderByChild, equalTo, limitToLast, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
+
+    const firebaseConfig = {
+      apiKey: 'AIzaSyDuqCvLn80NHR5NeUBZ8nILPru1fEAjtek',
+      authDomain: 'murmur-deab3.firebaseapp.com',
+      projectId: 'murmur-deab3',
+      // If your Realtime Database URL is different, paste it here (Firebase console > Realtime Database).
+      databaseURL: 'https://murmur-deab3-default-rtdb.firebaseio.com',
+      storageBucket: 'murmur-deab3.firebasestorage.app',
+      messagingSenderId: '785155307572',
+      appId: '1:785155307572:web:f22a41c5f84fdfe7e03261',
+      measurementId: 'G-ZRT8VKV29D'
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getDatabase(app);
+
+    const DEFAULT_STATE = {
+      v: 2,
+      loggedIn: false,
+      currentUser: { name: 'Me', email: '', username: '@me' },
+      users: { me: { name: 'Me', email: '', username: '@me' } },
+      posts: [],
+      conversations: {},
+      alerts: [],
+      activeChat: null,
+      activeView: 'home'
+    };
+
+    const state = loadState();
+    const authEl = document.getElementById('auth');
+    const appEl = document.getElementById('app');
+    const splash = document.getElementById('splash');
+    const authError = document.getElementById('authError');
+
+    function saveState() {
+      localStorage.setItem('murmur-demo-state', JSON.stringify(state));
+    }
+
+    function loadState() {
+      const fresh = () => JSON.parse(JSON.stringify(DEFAULT_STATE));
+      try {
+        const old = JSON.parse(localStorage.getItem('murmur-demo-state') || 'null');
+        if (!old) return fresh();
+        const st = fresh();
+        st.loggedIn = !!old.loggedIn;
+        st.activeView = old.activeView || 'home';
+        if (old.currentUser && old.currentUser.uid) { st.currentUser = old.currentUser; st.users.me = { ...old.currentUser }; }
+        if (old.v === 2) st.posts = old.posts || [];
+        return st;
+      } catch { return fresh(); }
+    }
+
+    function initials(name) {
+      return (name || 'M').split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0].toUpperCase()).join('') || 'M';
+    }
+
+    function showToast(message) {
+      const toast = document.createElement('div');
+      toast.textContent = message;
+      toast.style.position = 'fixed';
+      toast.style.bottom = '24px';
+      toast.style.left = '50%';
+      toast.style.transform = 'translateX(-50%)';
+      toast.style.background = 'rgba(20,33,61,0.88)';
+      toast.style.color = '#fff';
+      toast.style.padding = '10px 14px';
+      toast.style.borderRadius = '999px';
+      toast.style.zIndex = '300';
+      toast.style.fontWeight = '700';
+      toast.style.fontSize = '0.9rem';
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 2400);
+    }
+
+    function showAuth() {
+      authEl.hidden = false;
+      appEl.hidden = true;
+      document.getElementById('email').focus();
+      authError.textContent = '';
+    }
+
+    function showApp() {
+      authEl.hidden = true;
+      appEl.hidden = false;
+      renderAll();
+    }
+
+    function getCurrentUserName() {
+      return state.currentUser?.name || 'Maya Chen';
+    }
+
+    function getUserById(id) {
+      return state.users[id] || { name: 'Someone', email: '', username: '@someone' };
+    }
+
+    const esc = t => String(t ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    let remotePosts = null, unsubPosts = null;
+
+    function startPostsListener() {
+      if (unsubPosts) return;
+      const q = query(ref(db, 'posts'), orderByChild('createdAt'), limitToLast(50));
+      unsubPosts = onValue(q, snap => {
+        const v = snap.val() || {};
+        remotePosts = Object.entries(v).map(([id, p]) => ({ id, ...p })).sort((a, b) => (b.createdAt || Date.now()) - (a.createdAt || Date.now()));
+        renderPosts();
+      }, err => {
+        console.warn('Shared posts unavailable (check Realtime Database rules):', err);
+        remotePosts = null; unsubPosts = null; renderPosts();
+      });
+    }
+        function stopPostsListener() { if (unsubPosts) unsubPosts(); unsubPosts = null; remotePosts = null; }
+
+    function renderPosts() {
+      const postsEl = document.getElementById('posts');
+      postsEl.innerHTML = '';
+      const uid = auth.currentUser?.uid;
+      const list = remotePosts
+        ? remotePosts.map(p => ({ id: p.id, name: p.authorName || 'Someone', username: p.authorUsername || '', text: p.text || '', likes: Object.keys(p.likes || {}).length, liked: !!uid && !!(p.likes || {})[uid], mine: p.authorUid === uid, remote: true }))
+        : state.posts.map(p => { const a = getUserById(p.author); return { id: p.id, name: a.name, username: a.username || '@user', text: p.text, likes: p.likes, liked: p.liked, mine: false, remote: false }; });
+      if (!list.length) { postsEl.innerHTML = '<div class="empty">No posts yet. Share something new.</div>'; return; }
+      list.forEach(p => {
+        const card = document.createElement('article');
+        card.className = 'post';
+        card.innerHTML = `
+          <div class="post-head"><div class="meta">
+            <div class="avatar">${esc(initials(p.name))}</div>
+            <div><strong>${esc(p.name)}</strong><br /><small>${esc(p.username)}</small></div>
+          </div></div>
+          <p>${esc(p.text)}</p>
+          <div class="post-actions">
+            <button class="${p.liked ? 'active' : ''}" data-like="${esc(p.id)}" type="button">♡ ${p.likes}</button>
+            ${p.mine ? `<button type="button" data-del="${esc(p.id)}">Delete</button>` : ''}
+          </div>`;
+        postsEl.appendChild(card);
+      });
+    }
+
+    function renderVerify() {
+      const box = document.getElementById('verifyBanner');
+      const user = auth.currentUser;
+      box.hidden = !user || user.emailVerified;
+      if (box.hidden) return;
+      box.innerHTML = `Verify your email (${esc(user.email)}) to post. <button class="btn small ghost" type="button" id="resendVerify">Resend link</button> <button class="btn small primary" type="button" id="checkVerify">I've verified</button>`;
+      document.getElementById('resendVerify').onclick = async () => { try { await sendEmailVerification(user); showToast('Verification email sent.'); } catch (e) { showToast(e.message); } };
+      document.getElementById('checkVerify').onclick = async () => { await user.reload(); renderVerify(); showToast(user.emailVerified ? 'Email verified!' : 'Not verified yet.'); };
+    }
+
+    let friendDocs = [], unsubFriends = null, activeChatUid = null, unsubMsgs = null, chatMsgs = [], searchResults = [];
+    const meUid = () => auth.currentUser?.uid;
+    const otherOf = d => ({ uid: d.uid, name: d.name, username: d.username });
+    const friendsOf = () => friendDocs.filter(d => d.status === 'accepted');
+    const incoming = () => friendDocs.filter(d => d.status === 'incoming');
+    const outgoing = () => friendDocs.filter(d => d.status === 'outgoing');
+    const chatIdOf = (a, b) => [a, b].sort().join('_');
+
+    function personRow(name, username, actions) {
+      return `<div class="notice"><div class="avatar">${esc(initials(name))}</div><div style="flex:1;min-width:0"><h4>${esc(name)}</h4><small>${esc(username)}</small></div><div class="cookie-actions" style="flex:0 0 auto">${actions}</div></div>`;
+    }
+
+    function renderFriends() {
+      const list = document.getElementById('friendsList');
+      const f = friendsOf();
+      list.innerHTML = f.length ? f.map(d => { const o = otherOf(d); return personRow(o.name, o.username, `<button class="btn small primary" data-msg="${esc(o.uid)}" type="button">Message</button><button class="btn small ghost" data-fr-del="${esc(d.uid)}" type="button">Remove</button>`); }).join('') : '<div class="empty">No friends yet. Search for a username above.</div>';
+      const sent = outgoing();
+      document.getElementById('sentCard').hidden = !sent.length;
+      document.getElementById('sentList').innerHTML = sent.map(d => personRow(d.name, d.username, `<button class="btn small ghost" data-fr-del="${esc(d.uid)}" type="button">Cancel</button>`)).join('');
+      document.getElementById('searchResults').innerHTML = searchResults.map((r, i) => {
+        const rel = friendDocs.find(d => d.uid === r.uid);
+        const act = rel ? `<small>${rel.status === 'accepted' ? 'Friends' : 'Request pending'}</small>` : `<button class="btn small primary" data-fr-add="${i}" type="button">Add friend</button>`;
+        return personRow(r.name, r.username, act);
+      }).join('');
+    }
+
+    function renderChats() {
+      const list = document.getElementById('chatList');
+      const f = friendsOf();
+      list.innerHTML = f.length ? '' : '<div class="empty">Add a friend to start chatting.</div>';
+      f.forEach(d => {
+        const o = otherOf(d);
+        const item = document.createElement('button');
+        item.type = 'button';
+        item.className = 'chat-item' + (activeChatUid === o.uid ? ' active' : '');
+        item.innerHTML = `<div class="avatar">${esc(initials(o.name))}</div><div style="flex:1;min-width:0;text-align:left"><h4>${esc(o.name)}</h4><p>${esc(o.username)}</p></div>`;
+        item.addEventListener('click', () => openChat(o.uid));
+        list.appendChild(item);
+      });
+      const cur = f.map(otherOf).find(o => o.uid === activeChatUid);
+      document.getElementById('chatAvatar').textContent = cur ? initials(cur.name) : '?';
+      document.getElementById('chatName').textContent = cur ? cur.name : 'No chat selected';
+      document.getElementById('chatStatus').textContent = cur ? cur.username : 'Pick a friend to message';
+    }
+
+    function openChat(uid) {
+      if (unsubMsgs) unsubMsgs();
+      activeChatUid = uid; chatMsgs = [];
+      renderChats(); renderConversation();
+      const q = query(ref(db, `chats/${chatIdOf(meUid(), uid)}/messages`), orderByChild('createdAt'), limitToLast(200));
+      unsubMsgs = onValue(q, snap => { chatMsgs = Object.values(snap.val() || {}).sort((a, b) => (a.createdAt || Date.now()) - (b.createdAt || Date.now())); renderConversation(); }, err => { console.warn('Chat unavailable (check Firestore rules):', err); showToast('Chat unavailable.'); });
+    }
+
+    function renderConversation() {
+      const box = document.getElementById('messages');
+      box.innerHTML = '';
+      if (!activeChatUid) { box.innerHTML = '<div class="empty">Select a friend to start chatting.</div>'; return; }
+      if (!chatMsgs.length) box.innerHTML = '<div class="empty">No messages yet. Say hi!</div>';
+      chatMsgs.forEach(m => {
+        const b = document.createElement('div');
+        b.className = 'bubble ' + (m.from === meUid() ? 'me' : '');
+        b.textContent = m.text;
+        box.appendChild(b);
+      });
+      box.scrollTop = box.scrollHeight;
+    }
+
+    function renderAlerts() {
+      const inc = incoming();
+      const acc = [];
+      const el = document.getElementById('alertsList');
+      el.innerHTML = (inc.length || acc.length) ? '' : '<div class="empty">No alerts yet.</div>';
+      inc.forEach(d => el.insertAdjacentHTML('beforeend', `<div class="notice"><span class="dot"></span><div style="flex:1"><h4>${esc(d.name)} sent you a friend request</h4><small>${esc(d.username)}</small></div><div class="cookie-actions" style="flex:0 0 auto"><button class="btn small primary" data-fr-accept="${esc(d.uid)}" type="button">Accept</button><button class="btn small ghost" data-fr-del="${esc(d.uid)}" type="button">Decline</button></div></div>`));
+      acc.forEach(d => el.insertAdjacentHTML('beforeend', `<div class="notice"><span class="dot" style="background:rgba(20,33,61,0.3)"></span><div><h4>${esc(d.toName)} accepted your friend request</h4><small>${esc(d.toUsername)}</small></div></div>`));
+      ['friendsBadge', 'alertsBadge'].forEach(id => { const b = document.getElementById(id); b.textContent = inc.length; b.hidden = !inc.length; });
+    }
+
+    async function ensureProfile(user) {
+      try {
+        const snap = await get(ref(db, 'users/' + user.uid));
+        if (!snap.exists()) return;
+        const p = snap.val();
+        await set(ref(db, 'profiles/' + user.uid), { uid: user.uid, name: p.name || '', username: p.username || '', usernameLower: (p.username || '').toLowerCase() });
+      } catch (e) { console.warn('Profile sync failed (check Realtime Database rules):', e); }
+    }
+
+    function startFriendsListener(uid) {
+      if (unsubFriends) return;
+      unsubFriends = onValue(ref(db, 'friends/' + uid), snap => {
+        friendDocs = Object.entries(snap.val() || {}).map(([id, d]) => ({ id, ...d }));
+        if (activeChatUid && !friendsOf().some(d => d.uid === activeChatUid)) { if (unsubMsgs) unsubMsgs(); unsubMsgs = null; activeChatUid = null; chatMsgs = []; renderConversation(); }
+        renderFriends(); renderChats(); renderAlerts();
+      }, err => console.warn('Friends unavailable (check Realtime Database rules):', err));
+    }
+    function stopFriendsListener() {
+      [unsubFriends, unsubMsgs].forEach(u => u && u());
+      unsubFriends = unsubMsgs = null; friendDocs = []; activeChatUid = null; chatMsgs = []; searchResults = [];
+      renderFriends(); renderChats(); renderConversation(); renderAlerts();
+    }
+
+    async function searchFriends() {
+      const raw = document.getElementById('friendSearch').value.trim().toLowerCase().replace(/^@/, '');
+      if (raw.length < 3) { showToast('Type at least 3 letters of a username.'); return; }
+      try {
+        const snap = await get(query(ref(db, 'profiles'), orderByChild('usernameLower'), equalTo('@' + raw)));
+        searchResults = Object.values(snap.val() || {}).filter(r => r.uid !== meUid());
+        if (!searchResults.length) showToast('No one found with that username.');
+      } catch (e) { showToast(e.message || 'Search failed.'); }
+      renderFriends();
+    }
+
+    async function sendFriendRequest(t) {
+      const me = state.currentUser, u = meUid(), now = serverTimestamp();
+      try {
+        await update(ref(db), {
+          [`friends/${u}/${t.uid}`]: { uid: t.uid, name: t.name, username: t.username, status: 'outgoing', createdAt: now },
+          [`friends/${t.uid}/${u}`]: { uid: u, name: me.name, username: me.username, status: 'incoming', createdAt: now }
+        });
+        showToast('Friend request sent.');
+      } catch (e) { showToast(e.message || 'Could not send request.'); }
+    }
+
+    function renderAll() {
+      document.getElementById('composerAvatar').textContent = initials(getCurrentUserName());
+      const navButtons = document.querySelectorAll('[data-view]');
+      navButtons.forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.view === state.activeView);
+      });
+      document.querySelectorAll('.pane').forEach(pane => {
+        pane.classList.toggle('active', pane.dataset.pane === state.activeView);
+      });
+
+      renderPosts();
+      renderVerify();
+      renderFriends();
+      renderChats();
+      renderConversation();
+      renderAlerts();
+    }
+
+    function setView(view) {
+      state.activeView = view;
+      saveState();
+      renderAll();
+    }
+
+    function getPasswordStrength(password) {
+      let score = 0;
+      if (password.length >= 8) score += 1;
+      if (/[A-Z]/.test(password)) score += 1;
+      if (/[0-9]/.test(password)) score += 1;
+      if (/[^A-Za-z0-9]/.test(password)) score += 1;
+      if (password.length >= 12) score += 1;
+      if (score <= 2) return { score: 1, label: 'Weak', color: '#d84848' };
+      if (score <= 4) return { score: 2, label: 'Fair', color: '#d18b14' };
+      return { score: 3, label: 'Strong', color: '#14c8a0' };
+    }
+
+    function validateUsername(value) {
+      const username = value.trim();
+      if (!username) return 'Choose a username.';
+      if (!/^@?[a-zA-Z0-9._-]{3,20}$/.test(username)) return 'Use 3–20 letters/numbers, periods, dashes, or underscores.';
+      const normalized = username.startsWith('@') ? username : '@' + username;
+      const taken = Object.values(state.users).some(user => (user.username || '').toLowerCase() === normalized.toLowerCase());
+      if (taken) return 'That username is already taken.';
+      return '';
+    }
+
+    function isAdult(dateString) {
+      if (!dateString) return false;
+      const birth = new Date(dateString);
+      const now = new Date();
+      const age = now.getFullYear() - birth.getFullYear();
+      const monthDiff = now.getMonth() - birth.getMonth();
+      if (monthDiff < 0 || (monthDiff === 0 && now.getDate() < birth.getDate())) return age - 1 >= 13;
+      return age >= 13;
+    }
+
+    function saveProfileToFirestore(uid, profileData) {
+      return set(ref(db, 'users/' + uid), profileData);
+    }
+
+    let registerOverlay = null;
+
+    function closeRegisterWizard(fromHash) {
+      if (!registerOverlay) return;
+      registerOverlay.remove();
+      registerOverlay = null;
+      document.body.style.overflow = '';
+      if (!fromHash && location.hash === '#create-account') history.back();
+    }
+
+    window.addEventListener('hashchange', () => {
+      const h = location.hash;
+      if (LEGAL_HASHES[h]) { openLegal(LEGAL_HASHES[h]); return; }
+      if (legalOverlay) closeLegal(true);
+      if (h === '#create-account') {
+        if (forgotOverlay) closeForgotPassword(true);
+        if (!registerOverlay && !state.loggedIn) openRegisterWizard();
+      } else if (h === '#forgot-password') {
+        if (registerOverlay) closeRegisterWizard(true);
+        if (!forgotOverlay && !state.loggedIn) openForgotPassword();
+      } else {
+        if (registerOverlay) closeRegisterWizard(true);
+        if (forgotOverlay) closeForgotPassword(true);
+      }
+    });
+
+    function openRegisterWizard() {
+      if (registerOverlay) return;
+      if (location.hash !== '#create-account') history.pushState(null, '', '#create-account');
+
+      const STEPS = [
+        { title: 'Name', hint: 'Who you are' },
+        { title: 'Account', hint: 'Username & email' },
+        { title: 'Password', hint: 'Keep it secure' },
+        { title: 'Profile', hint: 'Photo & bio' },
+        { title: 'Details', hint: 'Location & interests' },
+        { title: 'Review', hint: 'Confirm & create' }
+      ];
+      const TOTAL = STEPS.length;
+
+      const overlay = document.createElement('div');
+      registerOverlay = overlay;
+      document.body.style.overflow = 'hidden';
+      overlay.className = 'screen-registration';
+      overlay.setAttribute('role', 'dialog');
+      overlay.setAttribute('aria-modal', 'true');
+      overlay.setAttribute('aria-labelledby', 'register-title');
+      overlay.innerHTML = `
+        <aside class="reg-side">
+          <div class="brand-row"><span class="brand-mark" aria-hidden="true"></span><span>Murmur</span></div>
+          <div class="reg-side-intro">
+            <h2>Join the social space built for people you actually know.</h2>
+            <p>Work through each tab at your own pace. You can jump back to any step before you create your account.</p>
+          </div>
+          <nav class="reg-tabs" role="tablist" aria-label="Sign up steps">
+            ${STEPS.map((s, i) => `
+              <button type="button" class="reg-tab" role="tab" data-tab="${i + 1}">
+                <span class="num">${i + 1}</span>
+                <span>${s.title}<small>${s.hint}</small></span>
+              </button>`).join('')}
+          </nav>
+        </aside>
+
+        <section class="reg-main">
+          <div class="reg-topbar">
+            <div>
+              <strong id="register-title">Create account</strong>
+              <small data-step-label>Step 1 of ${TOTAL}</small>
+            </div>
+            <button class="close-btn" type="button" aria-label="Close and go back to login">×</button>
+          </div>
+          <div class="reg-progress"><div data-progress></div></div>
+
+          <div class="reg-body" data-body>
+            <div class="reg-content">
+
+              <div class="reg-step active" data-step="1">
+                <div class="reg-step-head">
+                  <h3>What should we call you?</h3>
+                  <p>Use the name your friends know you by.</p>
+                </div>
+                <div class="row">
+                  <div class="field"><label for="reg-first">First name</label><input id="reg-first" name="firstName" type="text" autocomplete="given-name" placeholder="First name" /></div>
+                  <div class="field"><label for="reg-last">Last name</label><input id="reg-last" name="lastName" type="text" autocomplete="family-name" placeholder="Last name" /></div>
+                </div>
+                <div class="row">
+                  <div class="field"><label for="reg-middle">Middle name (optional)</label><input id="reg-middle" name="middleName" type="text" autocomplete="additional-name" placeholder="Middle name" /></div>
+                  <div class="field"><label for="reg-birthday">Birthday</label><input id="reg-birthday" name="birthday" type="date" autocomplete="bday" /></div>
+                </div>
+                <div class="field-hint">You must be at least 13 to use Murmur.</div>
+              </div>
+
+              <div class="reg-step" data-step="2">
+                <div class="reg-step-head">
+                  <h3>Set up your account</h3>
+                  <p>Pick a username and the email you'll log in with.</p>
+                </div>
+                <div class="field">
+                  <label for="reg-username">Username</label>
+                  <input id="reg-username" name="username" type="text" autocomplete="username" placeholder="@jian123" />
+                  <div class="error" data-user-error></div>
+                </div>
+                <div class="field">
+                  <label for="reg-email">Email address</label>
+                  <input id="reg-email" name="email" type="email" autocomplete="email" placeholder="you@example.com" />
+                </div>
+              </div>
+
+              <div class="reg-step" data-step="3">
+                <div class="reg-step-head">
+                  <h3>Create a password</h3>
+                  <p>Make it at least 8 characters. A mix of letters, numbers and symbols is stronger.</p>
+                </div>
+                <div class="field">
+                  <label for="reg-password">Password</label>
+                  <div class="password-wrap">
+                    <input id="reg-password" name="password" type="password" autocomplete="new-password" placeholder="Create a password" />
+                    <button class="password-toggle" type="button">Show</button>
+                  </div>
+                  <div class="strength-bar"><div class="strength-fill"></div></div>
+                  <div class="password-feedback"></div>
+                </div>
+                <div class="field">
+                  <label for="reg-confirm">Confirm password</label>
+                  <div class="password-wrap">
+                    <input id="reg-confirm" name="confirmPassword" type="password" autocomplete="new-password" placeholder="Confirm your password" />
+                    <button class="password-toggle" type="button">Show</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="reg-step" data-step="4">
+                <div class="reg-step-head">
+                  <h3>Build your profile</h3>
+                  <p>Everything on this tab is optional. You can change it later.</p>
+                </div>
+                <div class="field">
+                  <label for="reg-photo">Profile photo</label>
+                  <input id="reg-photo" name="photo" type="file" accept="image/*" />
+                </div>
+                <div class="field">
+                  <label for="reg-bio">Short bio</label>
+                  <textarea id="reg-bio" name="bio" placeholder="Tell people a little about yourself..."></textarea>
+                </div>
+                <div class="field">
+                  <label for="reg-gender">Gender</label>
+                  <select id="reg-gender" name="gender">
+                    <option value="">Prefer not to say</option>
+                    <option>Female</option>
+                    <option>Male</option>
+                    <option>Non-binary</option>
+                    <option>Other</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="reg-step" data-step="5">
+                <div class="reg-step-head">
+                  <h3>A few more details</h3>
+                  <p>Help friends find you. All optional.</p>
+                </div>
+                <div class="row">
+                  <div class="field"><label for="reg-location">Location</label><input id="reg-location" name="location" type="text" autocomplete="address-level2" placeholder="City, Country" /></div>
+                  <div class="field"><label for="reg-school">School</label><input id="reg-school" name="school" type="text" placeholder="School or university" /></div>
+                </div>
+                <div class="field">
+                  <label for="reg-phone">Phone number</label>
+                  <input id="reg-phone" name="phone" type="tel" autocomplete="tel" placeholder="Optional" />
+                </div>
+                <div class="section-label">Hobbies &amp; interests</div>
+                <div class="interest-grid">
+                  ${['Music','Gaming','Anime','Writing','Photography','Sports','Technology','Travel','Art'].map(t => `<button type="button" class="interest-option" aria-pressed="false">${t}</button>`).join('')}
+                </div>
+              </div>
+
+              <div class="reg-step" data-step="6">
+                <div class="reg-step-head">
+                  <h3>Review &amp; create</h3>
+                  <p>Check everything looks right. Use Edit to jump back to any section.</p>
+                </div>
+                <div class="profile-preview">
+                  <div class="avatar" data-preview-avatar>U</div>
+                  <div>
+                    <h4 data-preview-name>Your name</h4>
+                    <p data-preview-username>@yourname</p>
+                  </div>
+                </div>
+                <dl class="review-list" data-review-list style="margin:0"></dl>
+                <label class="checkbox-row">
+                  <input type="checkbox" id="termsCheck" />
+                  <span>I agree to the <a href="#terms">Terms of Service</a>, <a href="#privacy">Privacy Policy</a> and <a href="#cookies">Cookie Policy</a>, and I am 13+ years old.</span>
+                </label>
+              </div>
+
+            </div>
+          </div>
+
+          <div class="reg-footer">
+            <button type="button" class="btn ghost" data-action="back">Back</button>
+            <div class="reg-error" role="alert" aria-live="polite" data-reg-error></div>
+            <button type="button" class="btn primary" data-action="next">Continue</button>
+          </div>
+        </section>
+      `;
+      document.body.appendChild(overlay);
+
+      let step = 1;
+      const completed = new Set();
+      const $ = sel => overlay.querySelector(sel);
+      const field = name => overlay.querySelector(`[name="${name}"]`);
+      const tabs = [...overlay.querySelectorAll('.reg-tab')];
+      const panes = [...overlay.querySelectorAll('.reg-step')];
+      const nextButton = $('[data-action="next"]');
+      const backButton = $('[data-action="back"]');
+      const errorBox = $('[data-reg-error]');
+      const bodyEl = $('[data-body]');
+      const usernameInput = field('username');
+      const passwordInput = field('password');
+      const confirmInput = field('confirmPassword');
+
+      const selectedInterests = new Set();
+      overlay.querySelectorAll('.interest-option').forEach(opt => {
+        opt.addEventListener('click', () => {
+          const text = opt.textContent.trim();
+          if (selectedInterests.has(text)) selectedInterests.delete(text);
+          else selectedInterests.add(text);
+          const on = selectedInterests.has(text);
+          opt.classList.toggle('selected', on);
+          opt.setAttribute('aria-pressed', String(on));
+        });
+      });
+
+      function setError(message) { errorBox.textContent = message || ''; }
+      function normUser(v) { const t = v.trim(); return t.startsWith('@') ? t : '@' + t; }
+
+      function validateStep(n) {
+        if (n === 1) {
+          if (!field('firstName').value.trim() || !field('lastName').value.trim()) return 'Add your first and last name.';
+          const b = field('birthday').value;
+          if (!b) return 'Add your birthday.';
+          if (!isAdult(b)) return 'You must be at least 13 to create an account.';
+        }
+        if (n === 2) {
+          const userErr = validateUsername(usernameInput.value);
+          if (userErr) return userErr;
+          const email = field('email').value.trim();
+          if (!email) return 'Add your email address.';
+          if (!email.includes('@')) return 'Use a valid email address.';
+        }
+        if (n === 3) {
+          if (!passwordInput.value || passwordInput.value.length < 8) return 'Password must be at least 8 characters long.';
+          if (passwordInput.value !== confirmInput.value) return 'Passwords do not match.';
+        }
+        if (n === 6) {
+          if (!$('#termsCheck').checked) return 'You must accept the terms before creating your account.';
+        }
+        return '';
+      }
+
+      function renderReview() {
+        const first = field('firstName').value.trim();
+        const middle = field('middleName').value.trim();
+        const last = field('lastName').value.trim();
+        const name = [first, last].filter(Boolean).join(' ') || 'Your name';
+        const fullName = [first, middle, last].filter(Boolean).join(' ') || 'Your name';
+        const username = usernameInput.value.trim() ? normUser(usernameInput.value) : '@yourname';
+        $('[data-preview-name]').textContent = name;
+        $('[data-preview-avatar]').textContent = initials(name);
+        $('[data-preview-username]').textContent = username;
+
+        const rows = [
+          ['Name', fullName, 1],
+          ['Birthday', field('birthday').value, 1],
+          ['Username', username, 2],
+          ['Email', field('email').value.trim(), 2],
+          ['Password', '•'.repeat(Math.min(passwordInput.value.length, 12)), 3],
+          ['Bio', field('bio').value.trim(), 4],
+          ['Gender', field('gender').value, 4],
+          ['Location', field('location').value.trim(), 5],
+          ['School', field('school').value.trim(), 5],
+          ['Phone', field('phone').value.trim(), 5],
+          ['Interests', [...selectedInterests].join(', '), 5]
+        ];
+        const list = $('[data-review-list]');
+        list.innerHTML = '';
+        rows.forEach(([label, value, target]) => {
+          const row = document.createElement('div');
+          row.className = 'review-row';
+          const dt = document.createElement('dt');
+          dt.textContent = label;
+          const dd = document.createElement('dd');
+          dd.textContent = value || 'Not added';
+          if (!value) dd.className = 'empty-val';
+          const edit = document.createElement('button');
+          edit.type = 'button';
+          edit.textContent = 'Edit';
+          edit.addEventListener('click', () => goTo(target));
+          row.append(dt, dd, edit);
+          list.appendChild(row);
+        });
+      }
+
+      function updateUI() {
+        tabs.forEach((tab, i) => {
+          const n = i + 1;
+          const isDone = completed.has(n) && n !== step;
+          tab.classList.toggle('active', n === step);
+          tab.classList.toggle('done', isDone);
+          tab.setAttribute('aria-selected', String(n === step));
+          tab.querySelector('.num').textContent = isDone ? '✓' : n;
+        });
+        panes.forEach(p => p.classList.toggle('active', Number(p.dataset.step) === step));
+        backButton.style.visibility = step === 1 ? 'hidden' : 'visible';
+        nextButton.textContent = step === TOTAL ? 'Create account' : 'Continue';
+        $('[data-step-label]').textContent = `Step ${step} of ${TOTAL} · ${STEPS[step - 1].title}`;
+        $('[data-progress]').style.width = `${(step / TOTAL) * 100}%`;
+        setError('');
+        if (step === TOTAL) renderReview();
+        bodyEl.scrollTop = 0;
+        const firstInput = panes[step - 1].querySelector('input:not([type="file"]):not([type="checkbox"]), textarea, select');
+        if (firstInput) setTimeout(() => firstInput.focus({ preventScroll: true }), 30);
+      }
+
+      function goTo(target) {
+        if (target < step) { step = target; updateUI(); return; }
+        for (let n = step; n < target; n++) {
+          const err = validateStep(n);
+          if (err) {
+            step = n;
+            updateUI();
+            setError(err);
+            return;
+          }
+          completed.add(n);
+        }
+        step = target;
+        updateUI();
+      }
+
+      function updateStrength() {
+        const password = passwordInput.value;
+        const strength = getPasswordStrength(password);
+        const fill = $('.strength-fill');
+        fill.style.width = `${password ? (strength.score / 3) * 100 : 0}%`;
+        fill.style.background = strength.color;
+        $('.password-feedback').innerHTML = password
+          ? `<strong style="color:${strength.color}">${strength.label}</strong> Use 8+ characters and mix letters, numbers, symbols.`
+          : 'Use 8+ characters and mix letters, numbers, symbols.';
+      }
+
+      async function submit() {
+        const err = validateStep(TOTAL);
+        if (err) { setError(err); return; }
+        for (let n = 1; n < TOTAL; n++) {
+          const e = validateStep(n);
+          if (e) { goTo(n); setError(e); return; }
+        }
+
+        const first = field('firstName').value.trim();
+        const middle = field('middleName').value.trim();
+        const last = field('lastName').value.trim();
+        const fullName = [first, middle, last].filter(Boolean).join(' ');
+        const normalizedUser = normUser(usernameInput.value);
+        const email = field('email').value.trim();
+        const password = passwordInput.value;
+        const userProfile = {
+          firstName: first,
+          middleName: middle,
+          lastName: last,
+          name: fullName,
+          username: normalizedUser,
+          email,
+          birthday: field('birthday').value,
+          gender: field('gender').value,
+          school: field('school').value.trim(),
+          location: field('location').value.trim(),
+          phone: field('phone').value.trim(),
+          bio: field('bio').value.trim(),
+          interests: [...selectedInterests],
+          createdAt: new Date().toISOString(),
+          coverPhoto: '',
+          profilePhoto: ''
+        };
+
+        nextButton.disabled = true;
+        nextButton.textContent = 'Creating...';
+        try {
+          const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+          const uid = userCredential.user.uid;
+          await saveProfileToFirestore(uid, userProfile);
+            await ensureProfile(userCredential.user);
+          if (!userCredential.user.emailVerified) {
+            await sendEmailVerification(userCredential.user);
+          }
+          state.loggedIn = true;
+          state.currentUser = { name: fullName, email, username: normalizedUser, uid };
+          state.users.me = { ...state.currentUser };
+          saveState();
+          registerOverlay.remove();
+          registerOverlay = null;
+          document.body.style.overflow = '';
+          history.replaceState(null, '', location.pathname + location.search);
+          showApp();
+          showToast('Account created successfully!');
+        } catch (error) {
+          console.error('Create account failed:', error);
+          setError(error.message || 'Unable to create account.');
+          nextButton.disabled = false;
+          nextButton.textContent = 'Create account';
+        }
+      }
+
+      overlay.querySelectorAll('.password-toggle').forEach(button => {
+        button.addEventListener('click', () => {
+          const input = button.closest('.password-wrap').querySelector('input');
+          const hidden = input.type === 'password';
+          input.type = hidden ? 'text' : 'password';
+          button.textContent = hidden ? 'Hide' : 'Show';
+        });
+      });
+
+      usernameInput.addEventListener('input', () => {
+        $('[data-user-error]').textContent = usernameInput.value ? validateUsername(usernameInput.value) : '';
+      });
+      passwordInput.addEventListener('input', updateStrength);
+      overlay.addEventListener('input', () => setError(''));
+
+      tabs.forEach(tab => tab.addEventListener('click', () => goTo(Number(tab.dataset.tab))));
+      nextButton.addEventListener('click', () => { step === TOTAL ? submit() : goTo(step + 1); });
+      backButton.addEventListener('click', () => { if (step > 1) goTo(step - 1); });
+      $('.close-btn').addEventListener('click', () => closeRegisterWizard(false));
+
+      overlay.addEventListener('keydown', e => {
+        if (e.key === 'Escape') { closeRegisterWizard(false); return; }
+        if (e.key === 'Enter' && e.target.matches('input:not([type="checkbox"]):not([type="file"])')) {
+          e.preventDefault();
+          nextButton.click();
+        }
+      });
+
+      updateUI();
+      updateStrength();
+    }
+
+    async function login(email, password) {
+      const normalized = String(email || '').trim();
+      if (!normalized || !String(password || '').trim()) {
+        authError.textContent = 'Enter both email and password.';
+        return;
+      }
+      if (!normalized.includes('@')) {
+        authError.textContent = 'Use a valid email address.';
+        return;
+      }
+      try {
+        const userCredential = await signInWithEmailAndPassword(auth, normalized, password);
+        const userDoc = await get(ref(db, 'users/' + userCredential.user.uid));
+        const profile = userDoc.exists() ? userDoc.val() : {};
+        state.loggedIn = true;
+        state.currentUser = {
+          uid: userCredential.user.uid,
+          name: profile.name || userCredential.user.displayName || 'Maya Chen',
+          email: userCredential.user.email || normalized,
+          username: profile.username || '@maya'
+        };
+        state.users.me = { ...state.currentUser };
+        saveState();
+        showApp();
+      } catch (error) {
+        console.error('Login failed:', error);
+        authError.textContent = error.message || 'Login failed. Please try again.';
+      }
+    }
+
+    let forgotOverlay = null;
+
+    function closeForgotPassword(fromHash) {
+      if (!forgotOverlay) return;
+      forgotOverlay.remove();
+      forgotOverlay = null;
+      document.body.style.overflow = '';
+      if (!fromHash && location.hash === '#forgot-password') history.back();
+    }
+
+    function openForgotPassword() {
+      if (forgotOverlay) return;
+      if (location.hash !== '#forgot-password') history.pushState(null, '', '#forgot-password');
+
+      const overlay = document.createElement('div');
+      forgotOverlay = overlay;
+      document.body.style.overflow = 'hidden';
+      overlay.className = 'screen-forgot';
+      overlay.setAttribute('role', 'dialog');
+      overlay.setAttribute('aria-modal', 'true');
+      overlay.setAttribute('aria-labelledby', 'forgot-title');
+      overlay.innerHTML = `
+        <aside class="forgot-side">
+          <div class="brand-row"><span class="brand-mark" aria-hidden="true"></span><span>Murmur</span></div>
+          <div>
+            <h2>Locked out? It happens.</h2>
+            <p>Enter the email you signed up with and we'll send you a link to choose a new password.</p>
+          </div>
+          <span></span>
+        </aside>
+        <section class="forgot-main">
+          <div class="forgot-top">
+            <button class="close-btn" type="button" aria-label="Close and go back to login">×</button>
+          </div>
+          <div class="forgot-body">
+            <div class="forgot-content">
+              <h3 id="forgot-title">Reset your password</h3>
+              <p data-forgot-intro>We'll email you a reset link.</p>
+              <div class="field">
+                <label for="forgot-email">Email address</label>
+                <input id="forgot-email" type="email" autocomplete="email" placeholder="you@example.com" />
+              </div>
+              <div class="error" role="alert" aria-live="polite" data-forgot-error></div>
+              <div class="forgot-success" data-forgot-success hidden></div>
+              <button class="btn primary" type="button" data-forgot-send>Send reset link</button>
+              <button class="btn ghost" type="button" data-forgot-back>Back to login</button>
+            </div>
+          </div>
+        </section>
+      `;
+      document.body.appendChild(overlay);
+
+      const $ = sel => overlay.querySelector(sel);
+      const emailInput = $('#forgot-email');
+      const errorBox = $('[data-forgot-error]');
+      const successBox = $('[data-forgot-success]');
+      const sendBtn = $('[data-forgot-send]');
+      emailInput.value = (document.getElementById('email').value || '').trim();
+
+      async function send() {
+        const email = emailInput.value.trim();
+        errorBox.textContent = '';
+        successBox.hidden = true;
+        if (!email) { errorBox.textContent = 'Add your email address first.'; return; }
+        if (!email.includes('@')) { errorBox.textContent = 'Use a valid email address.'; return; }
+        sendBtn.disabled = true;
+        sendBtn.textContent = 'Sending...';
+        try {
+          await sendPasswordResetEmail(auth, email);
+          successBox.textContent = 'If an account exists for ' + email + ', a reset link is on its way. Check your inbox and spam folder.';
+          successBox.hidden = false;
+          sendBtn.textContent = 'Send again';
+        } catch (error) {
+          console.error('Password reset failed:', error);
+          errorBox.textContent = error.code === 'auth/invalid-email'
+            ? 'Use a valid email address.'
+            : (error.message || 'Unable to send the reset email.');
+          sendBtn.textContent = 'Send reset link';
+        }
+        sendBtn.disabled = false;
+      }
+
+      sendBtn.addEventListener('click', send);
+      $('[data-forgot-back]').addEventListener('click', () => closeForgotPassword(false));
+      $('.close-btn').addEventListener('click', () => closeForgotPassword(false));
+      overlay.addEventListener('keydown', e => {
+        if (e.key === 'Escape') closeForgotPassword(false);
+        if (e.key === 'Enter' && e.target === emailInput) { e.preventDefault(); send(); }
+      });
+      emailInput.addEventListener('input', () => { errorBox.textContent = ''; });
+      setTimeout(() => emailInput.focus(), 30);
+    }
+
+    /* ---------- Privacy Policy, Cookie Policy and cookie notice ---------- */
+    // Replace with the address people should write to about their data.
+    const PRIVACY_CONTACT = 'privacy@example.com';
+    const POLICY_UPDATED = 'October 28, 2026';
+    const COOKIE_NOTICE_KEY = 'murmur-cookie-notice';
+    const LEGAL_HASHES = { '#privacy': 'privacy', '#cookies': 'cookies', '#terms': 'terms' };
+
+    const LEGAL_PAGES = {
+      terms: () => `
+        <h1>Terms of Service</h1>
+        <p class="legal-meta">Last updated: ${POLICY_UPDATED}</p>
+        <p>These terms govern your use of Murmur. By creating an account or using Murmur you agree to them.</p>
+        <h2>1. Who can use Murmur</h2>
+        <p>You must be at least 13 years old and give accurate information when you sign up. You are responsible for your account and for keeping your password private.</p>
+        <h2>2. Your content</h2>
+        <p>You own what you post. You give Murmur permission to store and show it to other users so the service can work. Only post things you have the right to share.</p>
+        <h2>3. Acceptable use</h2>
+        <ul>
+          <li>No harassment, hate, threats or sexual content involving minors.</li>
+          <li>No spam, scams, impersonation or illegal content.</li>
+          <li>No attempts to break, overload or get around the security of Murmur.</li>
+        </ul>
+        <p>We may remove content or suspend accounts that break these rules.</p>
+        <h2>4. Ending your account</h2>
+        <p>You can delete your account at any time from inside the app. We may suspend or end accounts that break these terms.</p>
+        <h2>5. No guarantees</h2>
+        <p>Murmur is provided "as is". We try to keep it running but cannot promise it will always be available or error-free. To the extent the law allows, we are not liable for indirect or lost-data damages.</p>
+        <h2>6. Privacy</h2>
+        <p>How we handle your information is explained in the <a href="#privacy">Privacy Policy</a> and <a href="#cookies">Cookie Policy</a>.</p>
+        <h2>7. Changes and contact</h2>
+        <p>We may update these terms and will change the date above when we do. Questions? Email <a href="mailto:${PRIVACY_CONTACT}">${PRIVACY_CONTACT}</a>.</p>
+      `,
+
+      privacy: () => `
+        <h1>Privacy Policy</h1>
+        <p class="legal-meta">Last updated: ${POLICY_UPDATED}</p>
+        <p>This policy explains what personal information Murmur ("Murmur", "we", "us") collects, how we use it, who we share it with, and the choices you have. By creating an account or using Murmur you agree to it.</p>
+
+        <h2>1. Information we collect</h2>
+        <h3>Information you give us</h3>
+        <ul>
+          <li><strong>Account details:</strong> your first, middle and last name, username, email address and password. Your password is handled by Firebase Authentication. We never see it in readable form.</li>
+          <li><strong>Birthday:</strong> used to check that you are at least 13 years old.</li>
+          <li><strong>Optional profile details:</strong> gender, location, school, phone number, bio, interests and, if you add one, a profile photo.</li>
+        </ul>
+        <h3>Information created as you use Murmur</h3>
+        <p>Your posts, chats, likes and alerts. In this version of Murmur they are kept in your browser's local storage on your own device and are not sent to our servers.</p>
+        <h3>Technical information</h3>
+        <p>Our service providers record sign-in information such as your account ID and when you created your account and last signed in. They also process technical data such as your IP address and browser or device type so the service can run and stay secure.</p>
+
+        <h2>2. How we use your information</h2>
+        <ul>
+          <li>To create and manage your account and let you log in.</li>
+          <li>To send emails you need, such as email verification and password reset links.</li>
+          <li>To show your name, username and profile to other people as part of Murmur's features.</li>
+          <li>To keep Murmur safe, prevent misuse and fix problems.</li>
+          <li>To follow the law and respond to valid legal requests.</li>
+        </ul>
+
+        <h2>3. Who we share it with</h2>
+        <p>We do not sell your personal information. We share it only with:</p>
+        <ul>
+          <li><strong>Service providers.</strong> Murmur uses Google Firebase (Authentication and Cloud Firestore) to sign you in and store your account profile. They process data on our behalf under their own terms and privacy policy.</li>
+          <li><strong>Authorities or other parties</strong> when the law requires it, or to protect the rights and safety of you, others or Murmur.</li>
+          <li><strong>A successor</strong> if Murmur is merged with, or sold to, another service. We would tell you first if your information would be handled under a different policy.</li>
+        </ul>
+
+        <h2>4. What other people can see</h2>
+        <p>Your name, username and the posts you share are visible to other Murmur users. Think before you post personal details, and only share what you are comfortable with others seeing.</p>
+
+        <h2>5. Where your information is stored</h2>
+        <p>Account information is stored with Google Firebase, which may process it in data centers outside the country where you live. By using Murmur you understand that your information may be transferred to and handled in those locations.</p>
+
+        <h2>6. How long we keep it</h2>
+        <p>We keep your account information for as long as your account is open. When you ask us to delete your account we delete your profile information, except where we must keep something for legal reasons. Data stored in your browser stays there until you clear it or log out and clear site data.</p>
+
+        <h2>7. Your choices and rights</h2>
+        <p>Depending on where you live, you may have the right to:</p>
+        <ul>
+          <li>ask for a copy of the information we hold about you;</li>
+          <li>correct information that is wrong or out of date;</li>
+          <li>ask us to delete your account and information;</li>
+          <li>object to or limit certain uses of your information.</li>
+        </ul>
+        <p>To use any of these rights, email <a href="mailto:${PRIVACY_CONTACT}">${PRIVACY_CONTACT}</a>. We may need to confirm it is really you first. You can also clear the data Murmur keeps in your browser at any time from your browser settings.</p>
+
+        <h2>8. Security</h2>
+        <p>We use trusted providers and reasonable safeguards to protect your information. No online service is completely secure, so please choose a strong, unique password and keep it private.</p>
+
+        <h2>9. Children</h2>
+        <p>Murmur is not for children under 13. We do not knowingly collect information from anyone under 13. If you believe a child has given us information, contact us and we will delete it.</p>
+
+        <h2>10. Cookies and similar technologies</h2>
+        <p>We use a small amount of browser storage to keep you signed in and remember your settings. Read the <a href="#cookies">Cookie Policy</a> for the details.</p>
+
+        <h2>11. Changes to this policy</h2>
+        <p>We may update this policy from time to time. When we make an important change we will update the date at the top and, where appropriate, let you know in the app.</p>
+
+        <h2>12. Contact us</h2>
+        <p>Questions about this policy or your information? Email <a href="mailto:${PRIVACY_CONTACT}">${PRIVACY_CONTACT}</a>.</p>
+      `,
+
+      cookies: () => `
+        <h1>Cookie Policy</h1>
+        <p class="legal-meta">Last updated: ${POLICY_UPDATED}</p>
+        <p>This policy explains how Murmur uses cookies and similar technologies, such as your browser's local storage, and what choices you have. It should be read together with our <a href="#privacy">Privacy Policy</a>.</p>
+
+        <h2>1. What are cookies and similar technologies?</h2>
+        <p>Cookies are small text files a website can save in your browser. Similar technologies, like local storage and IndexedDB, also let a website save small pieces of information on your device so it can remember you between visits.</p>
+
+        <h2>2. What Murmur uses</h2>
+        <p>Murmur only uses storage that is strictly necessary to run the service. That is why it does not ask you to switch anything on or off.</p>
+        <div class="legal-table-wrap">
+          <table class="legal-table">
+            <thead><tr><th>Name</th><th>Type</th><th>What it does</th><th>How long</th></tr></thead>
+            <tbody>
+              <tr><td><code>murmur-demo-state</code></td><td>Local storage</td><td>Remembers whether you are logged in, which tab you were on, and your posts, chats and alerts.</td><td>Until you clear your browser data</td></tr>
+              <tr><td><code>firebaseLocalStorageDb</code></td><td>IndexedDB (Firebase Authentication)</td><td>Keeps you signed in and keeps your login secure.</td><td>Until you log out or clear your browser data</td></tr>
+              <tr><td><code>murmur-cookie-notice</code></td><td>Local storage</td><td>Remembers that you have seen the cookie notice so we do not show it every time.</td><td>Until you clear your browser data</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h2>3. What Murmur does not use</h2>
+        <ul>
+          <li>No advertising cookies.</li>
+          <li>No cross-site tracking.</li>
+          <li>No third-party analytics.</li>
+        </ul>
+
+        <h2>4. Third parties</h2>
+        <p>Murmur uses Google Firebase to sign you in and store your profile. When your browser connects to Google services it may receive technical information such as your IP address. Google's own privacy policy explains how it handles that information.</p>
+
+        <h2>5. Managing storage</h2>
+        <p>You can delete or block cookies and site data in your browser settings. If you do, you will be logged out and Murmur may forget your settings. Blocking storage completely may stop you from logging in, because the service needs it to keep you signed in.</p>
+
+        <h2>6. Changes</h2>
+        <p>If we ever add cookies or tools that are not strictly necessary, we will update this policy and ask for your permission first where the law requires it.</p>
+
+        <h2>7. Contact</h2>
+        <p>Questions? Email <a href="mailto:${PRIVACY_CONTACT}">${PRIVACY_CONTACT}</a>.</p>
+
+        <h2>Show the cookie notice again</h2>
+        <button type="button" class="btn secondary" data-reset-cookie-notice>Show cookie notice again</button>
+      `
+    };
+
+    let legalOverlay = null;
+    let legalDirect = false;
+
+    function closeLegal(fromHash) {
+      if (!legalOverlay) return;
+      legalOverlay.remove();
+      legalOverlay = null;
+      const stillLocked = registerOverlay || forgotOverlay;
+      if (!stillLocked) document.body.style.overflow = '';
+      if (fromHash) return;
+      if (legalDirect) {
+        history.replaceState(null, '', location.pathname + location.search);
+        legalDirect = false;
+      } else if (LEGAL_HASHES[location.hash]) {
+        history.back();
+      }
+    }
+
+    function openLegal(page, direct) {
+      if (!LEGAL_PAGES[page]) return;
+      if (!legalOverlay) {
+        legalDirect = !!direct;
+        const overlay = document.createElement('div');
+        legalOverlay = overlay;
+        document.body.style.overflow = 'hidden';
+        overlay.className = 'screen-legal';
+        overlay.setAttribute('role', 'dialog');
+        overlay.setAttribute('aria-modal', 'true');
+        overlay.setAttribute('aria-label', 'Privacy and cookies');
+        overlay.innerHTML = `
+          <div class="legal-top">
+            <div class="brand-row"><span class="brand-mark" aria-hidden="true"></span><span>Murmur</span></div>
+            <nav class="legal-tabs" role="tablist" aria-label="Legal pages">
+              <button type="button" class="legal-tab" role="tab" data-legal-tab="terms">Terms</button>
+              <button type="button" class="legal-tab" role="tab" data-legal-tab="privacy">Privacy Policy</button>
+              <button type="button" class="legal-tab" role="tab" data-legal-tab="cookies">Cookie Policy</button>
+            </nav>
+            <button class="close-btn" type="button" aria-label="Close">×</button>
+          </div>
+          <div class="legal-body" data-legal-body><article class="legal-doc" data-legal-doc></article></div>
+        `;
+        document.body.appendChild(overlay);
+
+        overlay.querySelectorAll('[data-legal-tab]').forEach(tab => {
+          tab.addEventListener('click', () => {
+            const target = tab.dataset.legalTab;
+            history.replaceState(null, '', '#' + target);
+            renderLegal(target);
+          });
+        });
+        overlay.querySelector('.close-btn').addEventListener('click', () => closeLegal(false));
+        overlay.addEventListener('keydown', e => { if (e.key === 'Escape') closeLegal(false); });
+        overlay.addEventListener('click', e => {
+          if (e.target.closest('[data-reset-cookie-notice]')) {
+            try { localStorage.removeItem(COOKIE_NOTICE_KEY); } catch {}
+            showCookieNotice();
+            showToast('Cookie notice will show again.');
+          }
+        });
+        overlay.querySelector('.close-btn').focus();
+      }
+      renderLegal(page);
+    }
+
+    function renderLegal(page) {
+      if (!legalOverlay || !LEGAL_PAGES[page]) return;
+      legalOverlay.querySelectorAll('[data-legal-tab]').forEach(tab => {
+        const on = tab.dataset.legalTab === page;
+        tab.classList.toggle('active', on);
+        tab.setAttribute('aria-selected', String(on));
+      });
+      legalOverlay.querySelector('[data-legal-doc]').innerHTML = LEGAL_PAGES[page]();
+      legalOverlay.querySelector('[data-legal-body]').scrollTop = 0;
+    }
+
+    function showCookieNotice() {
+      if (document.querySelector('.cookie-notice')) return;
+      const box = document.createElement('div');
+      box.className = 'cookie-notice';
+      box.setAttribute('role', 'region');
+      box.setAttribute('aria-label', 'Cookie notice');
+      box.innerHTML = `
+        <div>
+          <strong>We use cookies 🍪</strong>
+          <p>Murmur only uses essential cookies and browser storage to keep you signed in and remember your settings. We don't use advertising or tracking cookies. See our <a href="#cookies">Cookie Policy</a> and <a href="#privacy">Privacy Policy</a>.</p>
+        </div>
+        <div class="cookie-actions">
+          <button type="button" class="btn primary" data-cookie-ok>Got it</button>
+          <button type="button" class="btn ghost" data-cookie-more>Learn more</button>
+        </div>
+      `;
+      document.body.appendChild(box);
+      box.querySelector('[data-cookie-ok]').addEventListener('click', () => {
+        try { localStorage.setItem(COOKIE_NOTICE_KEY, 'seen'); } catch {}
+        box.remove();
+      });
+      box.querySelector('[data-cookie-more]').addEventListener('click', () => {
+        location.hash = '#cookies';
+      });
+    }
+
+    function maybeShowCookieNotice() {
+      let seen = false;
+      try { seen = localStorage.getItem(COOKIE_NOTICE_KEY) === 'seen'; } catch {}
+      if (!seen) showCookieNotice();
+    }
+
+    async function sendMessage() {
+      const input = document.getElementById('messageInput');
+      const text = input.value.trim();
+      if (!text || !activeChatUid) return;
+      input.value = '';
+      try { await push(ref(db, `chats/${chatIdOf(meUid(), activeChatUid)}/messages`), { from: meUid(), text, createdAt: serverTimestamp() }); }
+      catch (e) { input.value = text; showToast(e.message || 'Message failed.'); }
+    }
+
+    async function createPost() {
+      const input = document.getElementById('postInput');
+      const text = input.value.trim();
+      if (!text) return;
+      const user = auth.currentUser;
+      if (user && remotePosts) {
+        if (!user.emailVerified) { showToast('Verify your email to post.'); return; }
+        try {
+          await push(ref(db, 'posts'), { authorUid: user.uid, authorName: state.currentUser?.name || 'Someone', authorUsername: state.currentUser?.username || '', text, createdAt: serverTimestamp() });
+          input.value = '';
+        } catch (e) { showToast(e.message || 'Could not post.'); }
+        return;
+      }
+      state.posts.unshift({ id: Date.now(), author: 'me', text, likes: 0, liked: false });
+      input.value = '';
+      saveState();
+      renderPosts();
+    }
+
+    document.getElementById('loginBtn').addEventListener('click', () => {
+      login(document.getElementById('email').value, document.getElementById('password').value);
+    });
+    document.getElementById('createBtn').addEventListener('click', openRegisterWizard);
+    document.getElementById('resetBtn').addEventListener('click', openForgotPassword);
+    document.getElementById('postBtn').addEventListener('click', createPost);
+    document.getElementById('sendBtn').addEventListener('click', sendMessage);
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+      try {
+        await signOut(auth);
+      } catch (error) {
+        console.warn('Sign out failed:', error);
+      }
+      state.loggedIn = false;
+      saveState();
+      showAuth();
+    });
+    document.getElementById('messageInput').addEventListener('keydown', e => {
+      if (e.key === 'Enter') sendMessage();
+    });
+    document.getElementById('postInput').addEventListener('keydown', e => {
+      if (e.key === 'Enter') createPost();
+    });
+    document.getElementById('chatSearch').addEventListener('input', e => {
+      const q = e.target.value.trim().toLowerCase();
+      const list = document.getElementById('chatList');
+      list.querySelectorAll('.chat-item').forEach(item => {
+        const name = item.textContent.toLowerCase();
+        item.style.display = q && !name.includes(q) ? 'none' : 'flex';
+      });
+    });
+
+    document.querySelectorAll('[data-view]').forEach(btn => {
+      btn.addEventListener('click', () => setView(btn.dataset.view));
+    });
+
+    document.getElementById('friendSearchBtn').addEventListener('click', searchFriends);
+    document.getElementById('friendSearch').addEventListener('keydown', e => { if (e.key === 'Enter') searchFriends(); });
+    document.addEventListener('click', async e => {
+      const add = e.target.closest('[data-fr-add]'), acc = e.target.closest('[data-fr-accept]'), del = e.target.closest('[data-fr-del]'), msg = e.target.closest('[data-msg]');
+      try {
+        if (add) { await sendFriendRequest(searchResults[Number(add.dataset.frAdd)]); return; }
+        if (acc) { const o = acc.dataset.frAccept, u = meUid(); await update(ref(db), { [`friends/${u}/${o}/status`]: 'accepted', [`friends/${o}/${u}/status`]: 'accepted' }); return; }
+        if (del) { const o = del.dataset.frDel, u = meUid(); await update(ref(db), { [`friends/${u}/${o}`]: null, [`friends/${o}/${u}`]: null }); return; }
+        if (msg) { setView('chats'); openChat(msg.dataset.msg); return; }
+      } catch (err) { showToast(err.message || 'Action failed.'); }
+    });
+    document.addEventListener('click', async e => {
+      const likeBtn = e.target.closest('[data-like]');
+      const delBtn = e.target.closest('[data-del]');
+      const uid = auth.currentUser?.uid;
+      try {
+        if (delBtn && remotePosts) { await remove(ref(db, 'posts/' + delBtn.dataset.del)); return; }
+        if (!likeBtn) return;
+        if (remotePosts && uid) {
+          const post = remotePosts.find(p => p.id === likeBtn.dataset.like);
+          if (!post) return;
+          const lr = ref(db, `posts/${post.id}/likes/${uid}`);
+          await ((post.likes || {})[uid] ? remove(lr) : set(lr, true));
+          return;
+        }
+        const post = state.posts.find(p => p.id === Number(likeBtn.dataset.like));
+        if (!post) return;
+        post.liked = !post.liked;
+        post.likes += post.liked ? 1 : -1;
+        saveState();
+        renderPosts();
+      } catch (err) { showToast(err.message || 'Action failed.'); }
+    });
+
+    function openDeleteAccount() {
+      const user = auth.currentUser;
+      if (!user) return;
+      const back = document.createElement('div');
+      back.className = 'modal-back';
+      back.innerHTML = `<div class="modal-card" role="dialog" aria-modal="true"><h3>Delete your account?</h3>
+        <p>This permanently deletes your profile and your posts. It can't be undone. Enter your password to confirm.</p>
+        <input type="password" autocomplete="current-password" placeholder="Password" />
+        <div class="error" role="alert"></div>
+        <div class="cookie-actions"><button class="btn ghost" type="button" data-cancel>Cancel</button><button class="btn primary" type="button" data-confirm style="background:var(--danger);color:#fff">Delete forever</button></div></div>`;
+      document.body.appendChild(back);
+      const pw = back.querySelector('input'), err = back.querySelector('.error'), ok = back.querySelector('[data-confirm]');
+      back.querySelector('[data-cancel]').onclick = () => back.remove();
+      pw.focus();
+      ok.onclick = async () => {
+        err.textContent = '';
+        if (!pw.value) { err.textContent = 'Enter your password.'; return; }
+        ok.disabled = true; ok.textContent = 'Deleting...';
+        try {
+          await reauthenticateWithCredential(user, EmailAuthProvider.credential(user.email, pw.value));
+          const mine = await get(query(ref(db, 'posts'), orderByChild('authorUid'), equalTo(user.uid)));
+          const wipe = {};
+          Object.keys(mine.val() || {}).forEach(id => { wipe['posts/' + id] = null; });
+          friendDocs.forEach(d => { wipe[`friends/${user.uid}/${d.uid}`] = null; wipe[`friends/${d.uid}/${user.uid}`] = null; });
+          wipe['profiles/' + user.uid] = null; wipe['users/' + user.uid] = null;
+          await update(ref(db), wipe);
+          await deleteUser(user);
+          stopPostsListener();
+          state.loggedIn = false; state.currentUser = { ...DEFAULT_STATE.currentUser };
+          saveState(); back.remove(); showAuth(); showToast('Your account was deleted.');
+        } catch (e) {
+          err.textContent = e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential' ? 'Wrong password.' : (e.message || 'Could not delete account.');
+          ok.disabled = false; ok.textContent = 'Delete forever';
+        }
+      };
+    }
+    document.getElementById('deleteAccountBtn').addEventListener('click', openDeleteAccount);
+
+    onAuthStateChanged(auth, (user) => {
+      if (user) { startPostsListener(); startFriendsListener(user.uid); ensureProfile(user); } else { stopPostsListener(); stopFriendsListener(); }
+      renderVerify();
+      if (user) {
+        state.loggedIn = true;
+        state.currentUser = {
+          uid: user.uid,
+          name: state.currentUser?.name || 'Maya Chen',
+          email: user.email || state.currentUser?.email || 'maya@example.com',
+          username: state.currentUser?.username || '@maya'
+        };
+        saveState();
+      }
+    });
+
+    setTimeout(() => {
+      splash.classList.add('hide');
+      setTimeout(() => splash.remove(), 500);
+      if (state.loggedIn) showApp();
+      else {
+        showAuth();
+        if (location.hash === '#create-account') openRegisterWizard();
+        else if (location.hash === '#forgot-password') openForgotPassword();
+      }
+      if (LEGAL_HASHES[location.hash]) openLegal(LEGAL_HASHES[location.hash], true);
+      maybeShowCookieNotice();
+    }, 1100);
+  </script>
+</body>
+</html>
